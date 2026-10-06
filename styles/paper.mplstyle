@@ -1,0 +1,12 @@
+figure.facecolor: FFFFFF
+axes.facecolor:   FFFFFF
+text.color:       000000
+axes.prop_cycle:  cycler('color', ['000000', '555555', '999999', 'CCCCCC'])
+figure.figsize:   6, 3.5
+figure.dpi:       150
+font.family:      serif
+font.size:        10
+axes.spines.top:  False
+axes.spines.right: False
+legend.frameon:   False
+lines.linewidth:  1.2
