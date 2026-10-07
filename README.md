@@ -1,3 +1,3 @@
-# kx-plot
+# kx-mplstyles
 
 ## One-line matplotlib plots and themes for Kaggle notebooks.

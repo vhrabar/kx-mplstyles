@@ -1,0 +1,65 @@
+name: Publish to Kaggle
+on:
+  push:
+    branches: [main]
+    paths: ["kx.py", "styles/**", "data/**", "previews/**", "scripts/make_previews.py",
+            "README.md", "LICENSE", "dataset-metadata.json"]
+  workflow_dispatch:
+
+concurrency:
+  group: kaggle
+  cancel-in-progress: false
+
+env:
+  DATASET: vhrabar/kx-mplstyles
+  KAGGLE_CLI: kaggle@2.2.4
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: Kaggle
+      url: ${{ steps.push.outputs.url }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - run: uv sync --locked
+
+      - name: Test before publishing
+        run: uv run --locked pytest -W error
+
+      - name: Render previews
+        run: uv run --locked scripts/make_previews.py
+
+      - name: Stage only what Kaggle needs
+        run: |
+          mkdir build
+          cp -r kx.py styles data previews README.md LICENSE dataset-metadata.json build/
+
+      - name: Create or version dataset
+        id: push
+        env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          MSG: ${{ github.event.head_commit.message || format('manual run {0}', github.sha) }}
+        run: |
+          if uvx "$KAGGLE_CLI" datasets status "$DATASET" >/dev/null 2>&1; then
+            out=$(uvx "$KAGGLE_CLI" datasets version -p build -m "$MSG" --dir-mode zip 2>&1) || true
+          else
+            out=$(uvx "$KAGGLE_CLI" datasets create -p build --public --dir-mode zip 2>&1) || true
+          fi
+          echo "$out"
+
+          if grep -q "not valid tags" <<<"$out"; then
+            echo "::warning title=Kaggle tags::$(grep 'not valid tags' <<<"$out")"
+          elif ! grep -q "is being created" <<<"$out"; then
+            echo "::error title=Kaggle upload failed::$(tail -n 1 <<<"$out")"
+            exit 1
+          fi
+
+          url=$(grep -o 'https://www\.kaggle\.com/[^ ]*' <<<"$out" | head -n 1)
+          echo "url=${url:-https://www.kaggle.com/datasets/$DATASET}" >> "$GITHUB_OUTPUT"

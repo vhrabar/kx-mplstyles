@@ -1,0 +1,16 @@
+{
+  "id": "vhrabar/kx-mplstyles",
+  "title": "kx: matplotlib styles",
+  "subtitle": "One-line matplotlib plots and themes for Kaggle notebooks",
+  "description": "**kx**: tiny, transparent matplotlib helper for Kaggle notebooks that works offline.\n\n## Setup\nAttach this dataset (**Add Data → kx-mplstyles**), then:\n```python\nimport sys; sys.path.append('/kaggle/input/datasets/vhrabar/kx-mplstyles')\nimport kx; kx.use('dark')\n```\n\n## One-liner plots\n```python\nkx.plot(x, y, z, \"scatter-dark-grid\")    # spec: kind-theme-flag-...\nkx.plot(x, y, \"bar-light-leg\")           # z is optional\n```\n- **kind**: line | scatter | bar | hist\n- **theme**: dark | light | paper (any file in `styles/`)\n- **flags**: grid | leg | logx | logy | tight\n\nUnknown tokens raise an error. Run `kx.grammar()`, `kx.show('dark')` or `kx.source()` to see exactly what everything does.\n\n## Contents\n- `kx.py`: the whole helper, one file\n- `styles/`: theme files\n- `data/`: demo CSVs for `kx.load()`\n- `previews/`: one PNG per theme and a demo notebook\n\nSource and issues: https://github.com/vhrabar/kx-mplstyles\n",
+  "keywords": [
+    "Data Visualization",
+    "Matplotlib",
+    "Python"
+  ],
+  "licenses": [
+    {
+      "name": "MIT"
+    }
+  ]
+}
