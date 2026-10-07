@@ -1,0 +1,48 @@
+name: Regenerate previews
+on:
+  push:
+    branches: [main]
+    paths: ["kx.py", "styles/**", "data/**", "scripts/make_previews.py", "uv.lock"]
+  workflow_dispatch:
+
+concurrency:
+  group: previews
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  previews:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: "3.11"
+          enable-cache: true
+
+      - run: uv sync --locked
+
+      - name: Render theme PNGs
+        run: uv run --locked scripts/make_previews.py
+
+      - name: Re-execute demo notebook
+        run: >
+          uv run --locked --with nbconvert --with ipykernel
+          jupyter nbconvert --to notebook --execute --inplace
+          --ExecutePreprocessor.record_timing=False previews/demo.ipynb
+
+      - name: Commit if anything changed
+        run: |
+          git add previews
+          if git diff --cached --quiet; then
+            echo "previews up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: regenerate previews [skip ci]"
+          git pull --rebase
+          git push
