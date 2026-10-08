@@ -246,7 +246,8 @@ def test_palettes_discovers_new_files(tmp_path: Path, monkeypatch: pytest.Monkey
 
 # ---------- colormaps ----------
 def test_cmaps_lists_matplotlib_builtins() -> None:
-    assert kx.cmaps() == sorted(kx.BUILTIN_CMAPS)   # all present on matplotlib >= 3.10
+    assert kx.cmaps() == sorted(n for n in kx.BUILTIN_CMAPS if n in mpl.colormaps)
+    assert set(kx.BUILTIN_CMAPS) - {"berlin", "managua", "vanimo"} <= set(kx.cmaps())   # only these need 3.10
 
 
 def test_cmaps_skips_names_missing_from_matplotlib(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -256,6 +257,8 @@ def test_cmaps_skips_names_missing_from_matplotlib(monkeypatch: pytest.MonkeyPat
 
 @pytest.mark.parametrize("name", kx.BUILTIN_CMAPS)
 def test_use_cmap_colours_scatter(name: str) -> None:
+    if name not in mpl.colormaps:
+        pytest.skip(f"{name} needs a newer matplotlib")
     kx.use("light", cmap=name)
     assert kx.plot(X, Y, Z, "scatter").collections[0].get_cmap().name == name
 
@@ -308,7 +311,7 @@ def test_show_grammar_source(capsys: pytest.CaptureFixture[str]) -> None:
     assert "dark" in out
     assert "logy" in out
     assert "okabe" in out
-    assert "vanimo" in out
+    assert "viridis" in out
     kx.source()
     assert "def plot(" in capsys.readouterr().out
 

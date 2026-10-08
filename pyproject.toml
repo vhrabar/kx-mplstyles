@@ -19,9 +19,9 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 dependencies = [
-    "matplotlib",
-    "numpy",
-    "pandas",
+    "matplotlib>=3.7",
+    "numpy>=1.23",
+    "pandas>=1.5",
 ]
 
 [project.urls]
