@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  DATASET: vhrabar/kx-mplstyles
+  DATASET: vhrabar/kx-plot
   KAGGLE_CLI: kaggle@2.2.4
 
 jobs:

@@ -1,5 +1,5 @@
 [project]
-name = "kx-mplstyles"
+name = "kx-plot"
 version = "0.1.0"
 description = "One-line matplotlib plots and themes for Kaggle notebooks."
 readme = "README.md"

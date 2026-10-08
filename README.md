@@ -1,4 +1,4 @@
-# kx-mplstyles
+# kx-plot
 
 One-line matplotlib plots and themes for Kaggle notebooks.
 
@@ -9,10 +9,10 @@ matplotlib, numpy and pandas, works offline, so it runs in competition notebooks
 
 ## Setup
 
-Attach the dataset (**Add Input → Datasets → `vhrabar/kx-mplstyles`**) in a Kaggle notebook, then:
+Attach the dataset (**Add Input → Datasets → `vhrabar/kx-plot`**) in a Kaggle notebook, then:
 
 ```python
-import sys; sys.path.append('/kaggle/input/datasets/vhrabar/kx-mplstyles')
+import sys; sys.path.append('/kaggle/input/datasets/vhrabar/kx-plot')
 import kx; kx.use('dark')
 ```
 ## Usage
