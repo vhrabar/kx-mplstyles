@@ -5,7 +5,7 @@ One-line matplotlib plots and themes for notebooks and scripts.
 `kx` is a small, plain-Python package with `.mplstyle` themes, palettes and colourmaps. It needs nothing beyond
 matplotlib, numpy and pandas and works offline, so it also runs in Kaggle competition notebooks.
 
-![dark theme](previews/dark.png)
+![dark theme](https://raw.githubusercontent.com/vhrabar/kx-plot/main/previews/dark.png)
 
 ## Install
 
@@ -62,13 +62,26 @@ other cycled properties (such as `paper`'s linestyles) stay.
 `kx.palette('okabe')` returns the hex codes. A list of colours works too: `palette=['#264653', '#e9c46a']`.
 
 ## Colourmaps
-<!-- TODO -->
+
+Colourmaps for `kx.use(theme, cmap=...)` colour continuous values, such as a numeric `z` in `scatter`.
+Without `cmap`, the theme's own default applies.
+
+| Name                                           | Type                             |
+|------------------------------------------------|----------------------------------|
+| `viridis` `magma` `plasma` `inferno` `cividis` | Sequential, perceptually uniform |
+| `turbo`                                        | Sequential, rainbow              |
+| `coolwarm`                                     | Diverging                        |
+| `berlin` `managua` `vanimo`                    | Diverging, dark centre           |
+| `twilight`                                     | Cyclic, for angles and phases    |
+
+`kx.cmaps()` lists the ones that are available in the installed matplotlib as those implemented in matplotlib 3.10 or newer
+are not vendored.
 
 
 ## License
 
-Released under the MIT License. See [`LICENSE`](LICENSE).
+Released under the MIT License. See [`LICENSE`](https://github.com/vhrabar/kx-plot/blob/main/LICENSE).
 
 Copyright © 2026 Vedran Hrabar
 
-Vendored palettes keep their own licences; see [`kx/styles/palettes/LICENCES.md`](kx/styles/palettes/LICENCES.md).
+Vendored palettes keep their own licences; see [`kx/styles/palettes/LICENCES.md`](https://github.com/vhrabar/kx-plot/blob/main/kx/styles/palettes/LICENCES.md).
