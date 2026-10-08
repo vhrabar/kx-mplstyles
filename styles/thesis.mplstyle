@@ -1,0 +1,35 @@
+# thesis: 6.3 in = 160 mm A4 text width (25 mm margins), Computer Modern 10/9 pt, no LaTeX needed
+figure.facecolor: FFFFFF
+axes.facecolor:   FFFFFF
+savefig.facecolor: FFFFFF
+text.color:       000000
+axes.labelcolor:  000000
+axes.edgecolor:   000000
+axes.linewidth:   0.8
+axes.prop_cycle:  cycler('color', ['0072B2', 'D55E00', '009E73', 'CC79A7', 'E69F00', '56B4E9', '000000'])
+figure.figsize:   6.3, 3.9
+figure.dpi:       110
+savefig.dpi:      300
+savefig.bbox:     tight
+savefig.pad_inches: 0.03
+savefig.format:   pdf
+font.family:      serif
+font.serif:       cmr10
+mathtext.fontset: cm
+axes.formatter.use_mathtext: True
+axes.unicode_minus: True
+font.size:        10
+axes.titlesize:   10
+axes.labelsize:   10
+xtick.labelsize:  9
+ytick.labelsize:  9
+legend.fontsize:  9
+legend.frameon:   False
+axes.spines.top:  False
+axes.spines.right: False
+xtick.direction:  out
+ytick.direction:  out
+grid.color:       E5E5E5
+grid.linewidth:   0.5
+lines.linewidth:  1.3
+lines.markersize: 4

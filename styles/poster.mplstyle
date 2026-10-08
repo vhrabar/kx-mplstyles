@@ -1,0 +1,36 @@
+# posters: 4:3, very large sans type, heavy lines, legible from a few metres away
+figure.facecolor: FFFFFF
+axes.facecolor:   FFFFFF
+savefig.facecolor: FFFFFF
+text.color:       111111
+axes.labelcolor:  111111
+xtick.color:      222222
+ytick.color:      222222
+axes.edgecolor:   444444
+axes.linewidth:   2.5
+grid.color:       DDDDDD
+grid.linewidth:   1.5
+axes.spines.top:  False
+axes.spines.right: False
+axes.prop_cycle:  cycler('color', ['0072B2', 'E69F00', '009E73', 'D55E00', 'CC79A7', '56B4E9'])
+figure.figsize:   12, 9
+figure.dpi:       80
+savefig.dpi:      300
+savefig.bbox:     tight
+font.family:      sans-serif
+font.size:        26
+axes.titlesize:   32
+axes.titleweight: bold
+axes.labelsize:   28
+xtick.labelsize:  24
+ytick.labelsize:  24
+legend.fontsize:  24
+legend.frameon:   False
+xtick.major.size: 10
+ytick.major.size: 10
+xtick.major.width: 2.5
+ytick.major.width: 2.5
+xtick.major.pad:  8
+ytick.major.pad:  8
+lines.linewidth:  4.5
+lines.markersize: 13

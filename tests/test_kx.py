@@ -1,9 +1,11 @@
+from collections.abc import Callable
 from pathlib import Path
 
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.axes import Axes
 from matplotlib.colors import to_hex
 
 import kx
@@ -45,6 +47,74 @@ def test_scatter_colorbar_only_with_z(with_z: bool) -> None:
     ax = kx.plot(X, Y, Z if with_z else None, "scatter")
     assert len(ax.collections) == 1
     assert len(ax.figure.axes) == (2 if with_z else 1)
+
+
+def test_scatter_text_z_becomes_legend() -> None:
+    labels = np.where(Z > 2, "high", "low")
+    ax = kx.plot(X, Y, pd.Series(labels, name="level"), "scatter")
+    assert len(ax.figure.axes) == 1                    # no colorbar
+    assert len(ax.collections) == 2
+    leg = ax.get_legend()
+    assert leg.get_title().get_text() == "level"
+    assert [t.get_text() for t in leg.get_texts()] == ["high", "low"]
+    assert sum(len(c.get_offsets()) for c in ax.collections) == len(X)
+
+
+def test_scatter_categorical_keeps_category_order_and_bool_is_category() -> None:
+    cats = pd.Series(pd.Categorical(np.where(Z > 2, "b", "a"), categories=["b", "a"]))
+    assert [t.get_text() for t in kx.plot(X, Y, cats, "scatter").get_legend().get_texts()] == ["b", "a"]
+    assert [t.get_text() for t in kx.plot(X, Y, Z > 2, "scatter-leg").get_legend().get_texts()] == ["False", "True"]
+
+
+@pytest.mark.parametrize("with_z", [False, True])
+def test_step(with_z: bool) -> None:
+    ax = kx.plot(X, Y, Z if with_z else None, "step")
+    assert len(ax.lines) == (2 if with_z else 1)
+    assert all(ln.get_drawstyle() == "steps-mid" for ln in ax.lines)
+
+
+def test_area_overlaps_by_default() -> None:
+    ax = kx.plot(X, Y, Z, "area")
+    assert len(ax.lines) == 2 and len(ax.collections) == 2
+
+
+def test_area_stack() -> None:
+    ax = kx.plot(X, Y, Z, "area-stack-leg")
+    assert len(ax.collections) == 2 and len(ax.lines) == 0
+    top = ax.collections[1].get_paths()[0].vertices[:, 1].max()
+    assert top == pytest.approx((Y + Z).max())
+
+
+def test_area_norm_is_100_percent_stack() -> None:
+    ax = kx.plot(X, Y, Z, "area-norm")
+    top = ax.collections[1].get_paths()[0].vertices[:, 1].max()
+    assert top == pytest.approx(100)
+    assert ax.get_ylim() == (0, 100)
+    assert ax.yaxis.get_major_formatter()(50, 0) == "50%"
+
+
+def test_area_norm_legend_sits_outside() -> None:
+    leg = kx.plot(X, Y, Z, "area-norm-leg").get_legend()
+    assert leg.get_bbox_to_anchor().bounds[0] > leg.axes.bbox.bounds[0]    # anchored right of the axes
+
+
+def test_band_is_y_plus_minus_z() -> None:
+    ax = kx.plot(X, Y, np.full_like(Y, 0.5), "band-leg")
+    ys = ax.collections[0].get_paths()[0].vertices[:, 1]
+    assert ys.min() == pytest.approx(Y.min() - 0.5) and ys.max() == pytest.approx(Y.max() + 0.5)
+    assert to_hex(ax.collections[0].get_facecolor()[0]) == to_hex(ax.lines[0].get_color())
+    assert len(ax.get_legend().get_texts()) == 2
+
+
+@pytest.mark.parametrize("spec, call, match", [
+    ("band", lambda s: kx.plot(X, Y, spec=s), "needs z"),
+    ("area-norm", lambda s: kx.plot(X, Y, spec=s), "needs two series"),
+    ("line-stack", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
+    ("bar-norm", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
+])
+def test_new_kind_errors(spec: str, call: Callable[[str], Axes], match: str) -> None:
+    with pytest.raises(ValueError, match=match):
+        call(spec)
 
 
 @pytest.mark.parametrize("with_z", [False, True])
@@ -124,6 +194,66 @@ def test_use_palette_and_rc_overrides() -> None:
     assert tuple(mpl.rcParams["figure.figsize"]) == (5, 2)
 
 
+# ---------- palettes ----------
+OKABE = ["#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000"]
+
+
+def test_okabe_palette() -> None:
+    assert "okabe" in kx.palettes()
+    assert kx.palette("okabe") == OKABE
+
+
+def test_use_named_palette() -> None:
+    kx.use("light", palette="okabe")
+    ax = kx.plot(X, Y, Z, "line")
+    assert [to_hex(ln.get_color()).upper() for ln in ax.lines] == OKABE[:2]
+
+
+def test_palette_keeps_theme_linestyles() -> None:
+    kx.use("paper", palette="okabe")
+    cycle = mpl.rcParams["axes.prop_cycle"].by_key()
+    assert cycle["color"] == OKABE
+    assert cycle["linestyle"][:6] == ["-", "--", ":", "-.", "-", "--"]
+    assert len(cycle["linestyle"]) == len(OKABE)
+
+
+def test_unknown_palette() -> None:
+    with pytest.raises(ValueError, match="unknown palette"):
+        kx.use("dark", palette="nope")
+
+
+def test_palettes_discovers_new_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "styles" / "palettes").mkdir(parents=True)
+    (tmp_path / "styles" / "palettes" / "mine.txt").write_text("# comment\n\n112233\n  AABBCC  \n")
+    monkeypatch.setattr(kx, "_root", str(tmp_path))
+    assert kx.palettes() == ["mine"]
+    assert kx.styles() == []                    # the subfolder is not a theme
+    assert kx.palette("mine") == ["#112233", "#AABBCC"]
+
+
+# ---------- colormaps ----------
+def test_cmaps_lists_matplotlib_builtins() -> None:
+    assert kx.cmaps() == sorted(kx.BUILTIN_CMAPS)   # all present on matplotlib >= 3.10
+
+
+def test_cmaps_skips_names_missing_from_matplotlib(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(kx, "BUILTIN_CMAPS", ("viridis", "notacmap"))
+    assert kx.cmaps() == ["viridis"]
+
+
+@pytest.mark.parametrize("name", kx.BUILTIN_CMAPS)
+def test_use_cmap_colours_scatter(name: str) -> None:
+    kx.use("light", cmap=name)
+    assert kx.plot(X, Y, Z, "scatter").collections[0].get_cmap().name == name
+
+
+def test_unknown_cmap_leaves_theme_untouched() -> None:
+    kx.use("dark")
+    with pytest.raises(ValueError, match="unknown cmap"):
+        kx.use("light", cmap="nope")
+    assert to_hex(mpl.rcParams["axes.facecolor"]) == "#111418"
+
+
 @pytest.mark.parametrize("fn", [kx.use, kx.show])
 def test_unknown_theme(fn) -> None:  # noqa: ANN001
     with pytest.raises(ValueError, match="unknown theme"):
@@ -138,6 +268,18 @@ def test_styles_discovers_new_files(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert kx.plot(X, Y, "line-mine").lines[0].get_linewidth() == 3
 
 
+def test_paper_cycles_linestyles_for_greyscale_print() -> None:
+    ax = kx.plot(X, Y, Z, "line-paper")
+    assert ax.lines[0].get_linestyle() != ax.lines[1].get_linestyle()
+
+
+def test_scatter_size_follows_theme_markersize() -> None:
+    small = kx.plot(X, Y, "scatter-science").collections[0].get_sizes()[0]
+    large = kx.plot(X, Y, "scatter-poster").collections[0].get_sizes()[0]
+    assert kx.plot(X, Y, "scatter").collections[0].get_sizes()[0] == 18
+    assert small < 18 < large
+
+
 def test_every_shipped_style_loads() -> None:
     for name in kx.styles():
         kx.use(name)
@@ -149,7 +291,7 @@ def test_show_grammar_source(capsys: pytest.CaptureFixture[str]) -> None:
     assert "111418" in capsys.readouterr().out
     kx.grammar()
     out = capsys.readouterr().out
-    assert "scatter" in out and "dark" in out and "logy" in out
+    assert "scatter" in out and "dark" in out and "logy" in out and "okabe" in out and "vanimo" in out
     kx.source()
     assert "def plot(" in capsys.readouterr().out
 
