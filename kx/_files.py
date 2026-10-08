@@ -1,9 +1,9 @@
-"""Files that ship next to the package: styles/, styles/palettes/, data/."""
+"""Files that ship inside the package: styles/, styles/palettes/, data/."""
 import glob
 import os
 
-# repo (or Kaggle dataset) root; read as _files.root at call time so tests can point it elsewhere
-root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# the kx/ package folder; read as _files.root at call time so tests can point it elsewhere
+root = os.path.dirname(os.path.abspath(__file__))
 
 
 def path(*parts: str) -> str:

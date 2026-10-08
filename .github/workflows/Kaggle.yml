@@ -2,7 +2,7 @@ name: Publish to Kaggle
 on:
   push:
     branches: [main]
-    paths: ["kx/**", "styles/**", "data/**", "previews/**", "scripts/make_previews.py",
+    paths: ["kx/**", "previews/**", "scripts/make_previews.py",
             "README.md", "LICENSE", "dataset-metadata.json"]
   workflow_dispatch:
 
@@ -39,7 +39,7 @@ jobs:
       - name: Stage only what Kaggle needs
         run: |
           mkdir build
-          cp -r kx styles data previews README.md LICENSE dataset-metadata.json build/
+          cp -r kx previews README.md LICENSE dataset-metadata.json build/
           find build -name __pycache__ -prune -exec rm -rf {} +
 
       - name: Create or version dataset

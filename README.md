@@ -60,4 +60,4 @@ Released under the MIT License. See [`LICENSE`](LICENSE).
 
 Copyright © 2026 Vedran Hrabar
 
-Vendored palettes keep their own licences; see [`styles/palettes/LICENCES.md`](styles/palettes/LICENCES.md).
+Vendored palettes keep their own licences; see [`kx/styles/palettes/LICENCES.md`](kx/styles/palettes/LICENCES.md).

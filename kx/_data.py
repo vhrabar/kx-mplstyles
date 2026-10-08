@@ -10,7 +10,7 @@ def datasets() -> list[str]:
 
 
 def load(name: str) -> pd.DataFrame:
-    """Read data/<name>.csv that ships with the dataset."""
+    """Read data/<name>.csv that ships with the package."""
     if name not in datasets():
         raise ValueError(f"unknown dataset {name!r}. Available: {datasets()}")
     return pd.read_csv(_files.path("data", f"{name}.csv"))

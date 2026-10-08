@@ -4,21 +4,47 @@ version = "0.1.0"
 description = "One-line matplotlib plots and themes for Kaggle notebooks."
 readme = "README.md"
 license = "MIT"
+license-files = ["LICENSE", "kx/styles/palettes/LICENCES.md"]
+authors = [{ name = "Vedran Hrabar", email = "vedran.hrabar@outlook.com" }]
 requires-python = ">=3.10"
+keywords = ["matplotlib", "plotting", "visualization", "themes", "kaggle", "jupyter"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Jupyter",
+    "Framework :: Matplotlib",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
 dependencies = [
     "matplotlib",
     "numpy",
     "pandas",
 ]
 
+[project.urls]
+Homepage = "https://github.com/vhrabar/kx-plot"
+Issues = "https://github.com/vhrabar/kx-plot/issues"
+Changelog = "https://github.com/vhrabar/kx-plot/blob/main/CHANGELOG.md"
+Kaggle = "https://www.kaggle.com/datasets/vhrabar/kx-plot"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["kx"]
+
+[tool.hatch.build.targets.sdist]
+include = ["kx", "tests", "README.md", "LICENSE", "CHANGELOG.md"]
+
 [dependency-groups]
 dev = [
     "pytest",
     "ruff>=0.16.10",
 ]
-
-[tool.uv]
-package = false
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
