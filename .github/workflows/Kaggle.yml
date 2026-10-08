@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     paths: ["kx/**", "previews/**", "scripts/make_previews.py",
-            "README.md", "LICENSE", "dataset-metadata.json"]
+            "README.md", "LICENSE", "dataset-metadata.json", "pyproject.toml"]
   workflow_dispatch:
 
 concurrency:
@@ -39,7 +39,7 @@ jobs:
       - name: Stage only what Kaggle needs
         run: |
           mkdir build
-          cp -r kx previews README.md LICENSE dataset-metadata.json build/
+          cp -r kx previews README.md LICENSE dataset-metadata.json pyproject.toml build/
           find build -name __pycache__ -prune -exec rm -rf {} +
 
       - name: Create or version dataset

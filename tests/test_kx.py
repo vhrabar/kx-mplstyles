@@ -346,3 +346,8 @@ def test_datasets_and_load() -> None:
 def test_load_unknown() -> None:
     with pytest.raises(ValueError, match="unknown dataset"):
         kx.load("nope")
+
+
+def test_version_comes_from_pyproject() -> None:
+    toml = (Path(kx.__file__).parent.parent / "pyproject.toml").read_text()
+    assert f'\nversion = "{kx.__version__}"\n' in toml

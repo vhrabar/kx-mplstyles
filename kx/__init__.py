@@ -11,8 +11,10 @@ Colormaps (kx.use(theme, cmap="magma")):  kx.cmaps()
 kx.grammar("area") and kx.source("area") explain one kind.
 """
 import glob
+import importlib.metadata
 import inspect
 import os
+import re
 
 from ._data import datasets, load
 from ._plot import plot
@@ -20,8 +22,27 @@ from ._spec import COMMON_FLAGS, KINDS, all_flags
 from ._spec import parse as _parse  # noqa: F401  (tests)
 from ._theme import BUILTIN_CMAPS, cmaps, palette, palettes, show, styles, use
 
-__all__ = ["BUILTIN_CMAPS", "cmaps", "datasets", "grammar", "load", "palette", "palettes", "plot", "show",
-           "source", "styles", "use"]
+__all__ = ["BUILTIN_CMAPS", "__version__", "cmaps", "datasets", "grammar", "load", "palette", "palettes", "plot",
+           "show", "source", "styles", "use"]
+
+
+def _version() -> str:
+    """project.version from pyproject.toml, the only place it is written.
+
+    """
+    toml = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "pyproject.toml")
+    if os.path.isfile(toml):
+        with open(toml) as f:
+            m = re.search(r'^version\s*=\s*"([^"]+)"', f.read(), re.MULTILINE)
+        if m:
+            return m.group(1)
+    try:
+        return importlib.metadata.version("kx-plot")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
+
+
+__version__ = _version()
 
 
 def _kind(name: str):  # noqa: ANN202
