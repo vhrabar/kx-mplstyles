@@ -1,0 +1,9 @@
+# Paul Tol Vibrant: 7 colours, colour-blind safe
+# https://sronpersonalpages.nl/~pault/
+0077BB
+33BBEE
+009988
+EE7733
+CC3311
+EE3377
+BBBBBB

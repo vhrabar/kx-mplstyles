@@ -5,6 +5,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   pytest:
     runs-on: ubuntu-latest
@@ -23,5 +26,25 @@ jobs:
       - name: Install dependencies from uv.lock
         run: uv sync --locked
 
+      - name: Lint
+        run: uv run --locked ruff check .
+
       - name: Run tests
         run: uv run --locked pytest -W error
+
+  pytest-oldest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: "3.10"
+
+      - name: Install the minimum supported dependencies
+        run: |
+          uv venv
+          uv pip install --resolution lowest-direct . "pytest>=8"
+
+      - name: Run tests
+        run: .venv/bin/python -m pytest -q

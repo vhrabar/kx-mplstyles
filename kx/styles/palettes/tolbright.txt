@@ -1,0 +1,9 @@
+# Paul Tol Bright: 7 colours, colour-blind safe
+# https://sronpersonalpages.nl/~pault/
+4477AA
+66CCEE
+228833
+CCBB44
+EE6677
+AA3377
+BBBBBB

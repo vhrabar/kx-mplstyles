@@ -1,0 +1,42 @@
+name: Changelog
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  KACL: python-kacl==0.7.3
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v10.2.0
+
+      - name: Verify CHANGELOG.md
+        run: uvx --from "$KACL" kacl-cli verify
+
+      - name: Require changelog notes if this PR will release
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          VERSION="$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
+            echo "v${VERSION} is already tagged; this PR won't trigger a release."
+            exit 0
+          fi
+          echo "v${VERSION} is not tagged yet, so merging releases it; checking for release notes..."
+          if ! NOTES="$(uvx --from "$KACL" kacl-cli get unreleased --no-header 2>/dev/null)" || [ -z "$NOTES" ]; then
+            echo "::error::Merging releases v${VERSION}, but CHANGELOG.md has no content under '## [Unreleased]'. Add release notes there first."
+            exit 1
+          fi
+          echo "Notes found under [Unreleased]."

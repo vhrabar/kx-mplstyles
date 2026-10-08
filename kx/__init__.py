@@ -1,0 +1,76 @@
+"""
+kx: tiny matplotlib helper.
+
+Token grammar for kx.plot(spec):   kind-theme-flag-flag-...
+  kind  : line | step | area | band | scatter | bar | hist
+  theme : any file name in styles/
+  flags : grid | leg | logx | logy | tight | stack | norm  (stack and norm: area only)
+
+Palettes (kx.use(theme, palette="okabe")): any file name in styles/palettes/
+Colormaps (kx.use(theme, cmap="magma")):  kx.cmaps()
+kx.grammar("area") and kx.source("area") explain one kind.
+"""
+import glob
+import importlib.metadata
+import inspect
+import os
+import re
+
+from ._data import datasets, load
+from ._plot import plot
+from ._spec import COMMON_FLAGS, KINDS, all_flags
+from ._spec import parse as _parse  # noqa: F401  (tests)
+from ._theme import BUILTIN_CMAPS, cmaps, palette, palettes, show, styles, use
+
+__all__ = ["BUILTIN_CMAPS", "__version__", "cmaps", "datasets", "grammar", "load", "palette", "palettes", "plot",
+           "show", "source", "styles", "use"]
+
+
+def _version() -> str:
+    """project.version from pyproject.toml, the only place it is written.
+
+    """
+    toml = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "pyproject.toml")
+    if os.path.isfile(toml):
+        with open(toml) as f:
+            m = re.search(r'^version\s*=\s*"([^"]+)"', f.read(), re.MULTILINE)
+        if m:
+            return m.group(1)
+    try:
+        return importlib.metadata.version("kx-plot")
+    except importlib.metadata.PackageNotFoundError:
+        return "unknown"
+
+
+__version__ = _version()
+
+
+def _kind(name: str):  # noqa: ANN202
+    if name not in KINDS:
+        raise ValueError(f"unknown kind {name!r}. Available: {sorted(KINDS)}")
+    return KINDS[name]
+
+
+def grammar(kind: str | None = None) -> None:
+    """Print the valid tokens for kx.plot specs, or what one kind does and which flags it takes."""
+    if kind:
+        k = _kind(kind)
+        print(f"{k.name}: {inspect.getdoc(k.draw)}")
+        print("flags:", sorted(COMMON_FLAGS), "+", sorted(k.flags) or "none of its own")
+        return
+    print("kind :", sorted(KINDS))
+    print("theme:", styles())
+    print("flags:", sorted(all_flags()))
+    print("palettes (kx.use):", palettes())
+    print("cmaps    (kx.use):", cmaps())
+
+
+def source(kind: str | None = None) -> None:
+    """Print the code that draws one kind, or every file in this package."""
+    if kind:
+        print(inspect.getsource(_kind(kind).draw))
+        return
+    here = os.path.dirname(os.path.abspath(__file__))
+    for p in sorted(glob.glob(os.path.join(here, "**", "*.py"), recursive=True)):
+        with open(p) as f:
+            print(f"# ---------- kx/{os.path.relpath(p, here)} ----------\n{f.read()}")

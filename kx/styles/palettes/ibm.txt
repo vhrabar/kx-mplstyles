@@ -1,0 +1,7 @@
+# IBM colour-blind safe: 5 colours
+# IBM Design Library
+648FFF
+785EF0
+DC267F
+FE6100
+FFB000

@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable
 from pathlib import Path
 
@@ -24,7 +25,7 @@ def test_parse_defaults_to_line_and_no_theme() -> None:
     assert kx._parse("grid") == ("line", None, {"grid"})
 
 
-@pytest.mark.parametrize("spec, match", [
+@pytest.mark.parametrize(("spec", "match"), [
     ("line-nope", "unknown tokens"),
     ("line--dark", "unknown tokens"),
     ("line-scatter", "more than one kind"),
@@ -75,12 +76,14 @@ def test_step(with_z: bool) -> None:
 
 def test_area_overlaps_by_default() -> None:
     ax = kx.plot(X, Y, Z, "area")
-    assert len(ax.lines) == 2 and len(ax.collections) == 2
+    assert len(ax.lines) == 2
+    assert len(ax.collections) == 2
 
 
 def test_area_stack() -> None:
     ax = kx.plot(X, Y, Z, "area-stack-leg")
-    assert len(ax.collections) == 2 and len(ax.lines) == 0
+    assert len(ax.collections) == 2
+    assert len(ax.lines) == 0
     top = ax.collections[1].get_paths()[0].vertices[:, 1].max()
     assert top == pytest.approx((Y + Z).max())
 
@@ -101,12 +104,13 @@ def test_area_norm_legend_sits_outside() -> None:
 def test_band_is_y_plus_minus_z() -> None:
     ax = kx.plot(X, Y, np.full_like(Y, 0.5), "band-leg")
     ys = ax.collections[0].get_paths()[0].vertices[:, 1]
-    assert ys.min() == pytest.approx(Y.min() - 0.5) and ys.max() == pytest.approx(Y.max() + 0.5)
+    assert ys.min() == pytest.approx(Y.min() - 0.5)
+    assert ys.max() == pytest.approx(Y.max() + 0.5)
     assert to_hex(ax.collections[0].get_facecolor()[0]) == to_hex(ax.lines[0].get_color())
     assert len(ax.get_legend().get_texts()) == 2
 
 
-@pytest.mark.parametrize("spec, call, match", [
+@pytest.mark.parametrize(("spec", "call", "match"), [
     ("band", lambda s: kx.plot(X, Y, spec=s), "needs z"),
     ("area-norm", lambda s: kx.plot(X, Y, spec=s), "needs two series"),
     ("line-stack", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
@@ -164,7 +168,7 @@ def test_non_hist_needs_y() -> None:
 
 def test_draws_into_given_ax() -> None:
     import matplotlib.pyplot as plt
-    fig, (a, b) = plt.subplots(1, 2)
+    _, (a, b) = plt.subplots(1, 2)
     assert kx.plot(X, Y, "line", ax=b) is b
     assert len(a.lines) == 0
 
@@ -203,6 +207,15 @@ def test_okabe_palette() -> None:
     assert kx.palette("okabe") == OKABE
 
 
+@pytest.mark.parametrize("name", kx.palettes())
+def test_palette_file_is_valid(name: str) -> None:
+    colors = kx.palette(name)
+    assert len(colors) >= 3
+    assert all(re.fullmatch(r"#[0-9A-F]{6}", c) for c in colors), colors
+    assert len(set(colors)) == len(colors)
+    assert "#FFFFFF" not in colors              # white vanishes on light themes
+
+
 def test_use_named_palette() -> None:
     kx.use("light", palette="okabe")
     ax = kx.plot(X, Y, Z, "line")
@@ -225,7 +238,7 @@ def test_unknown_palette() -> None:
 def test_palettes_discovers_new_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "styles" / "palettes").mkdir(parents=True)
     (tmp_path / "styles" / "palettes" / "mine.txt").write_text("# comment\n\n112233\n  AABBCC  \n")
-    monkeypatch.setattr(kx, "_root", str(tmp_path))
+    monkeypatch.setattr(kx._files, "root", str(tmp_path))
     assert kx.palettes() == ["mine"]
     assert kx.styles() == []                    # the subfolder is not a theme
     assert kx.palette("mine") == ["#112233", "#AABBCC"]
@@ -233,16 +246,19 @@ def test_palettes_discovers_new_files(tmp_path: Path, monkeypatch: pytest.Monkey
 
 # ---------- colormaps ----------
 def test_cmaps_lists_matplotlib_builtins() -> None:
-    assert kx.cmaps() == sorted(kx.BUILTIN_CMAPS)   # all present on matplotlib >= 3.10
+    assert kx.cmaps() == sorted(n for n in kx.BUILTIN_CMAPS if n in mpl.colormaps)
+    assert set(kx.BUILTIN_CMAPS) - {"berlin", "managua", "vanimo"} <= set(kx.cmaps())   # only these need 3.10
 
 
 def test_cmaps_skips_names_missing_from_matplotlib(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(kx, "BUILTIN_CMAPS", ("viridis", "notacmap"))
+    monkeypatch.setattr(kx._theme, "BUILTIN_CMAPS", ("viridis", "notacmap"))
     assert kx.cmaps() == ["viridis"]
 
 
 @pytest.mark.parametrize("name", kx.BUILTIN_CMAPS)
 def test_use_cmap_colours_scatter(name: str) -> None:
+    if name not in mpl.colormaps:
+        pytest.skip(f"{name} needs a newer matplotlib")
     kx.use("light", cmap=name)
     assert kx.plot(X, Y, Z, "scatter").collections[0].get_cmap().name == name
 
@@ -263,7 +279,7 @@ def test_unknown_theme(fn) -> None:  # noqa: ANN001
 def test_styles_discovers_new_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "styles").mkdir()
     (tmp_path / "styles" / "mine.mplstyle").write_text("lines.linewidth: 3\n")
-    monkeypatch.setattr(kx, "_root", str(tmp_path))
+    monkeypatch.setattr(kx._files, "root", str(tmp_path))
     assert kx.styles() == ["mine"]
     assert kx.plot(X, Y, "line-mine").lines[0].get_linewidth() == 3
 
@@ -291,10 +307,38 @@ def test_show_grammar_source(capsys: pytest.CaptureFixture[str]) -> None:
     assert "111418" in capsys.readouterr().out
     kx.grammar()
     out = capsys.readouterr().out
-    assert "scatter" in out and "dark" in out and "logy" in out and "okabe" in out and "vanimo" in out
+    assert "scatter" in out
+    assert "dark" in out
+    assert "logy" in out
+    assert "okabe" in out
+    assert "viridis" in out
     kx.source()
     assert "def plot(" in capsys.readouterr().out
 
+
+
+def test_grammar_and_source_of_one_kind(capsys: pytest.CaptureFixture[str]) -> None:
+    kx.grammar("area")
+    out = capsys.readouterr().out
+    assert "100% stack" in out
+    assert "'norm'" in out
+    assert "'grid'" in out
+    kx.source("band")
+    out = capsys.readouterr().out
+    assert out.lstrip().startswith("@kind(\"band\"")
+    assert "def scatter(" not in out
+
+
+@pytest.mark.parametrize("fn", [kx.grammar, kx.source])
+def test_unknown_kind(fn) -> None:  # noqa: ANN001
+    with pytest.raises(ValueError, match="unknown kind"):
+        fn("nope")
+
+
+@pytest.mark.parametrize("name", ["line", "grid", "a-b"])
+def test_kind_names_stay_unique_tokens(name: str) -> None:
+    with pytest.raises(ValueError, match="taken"):
+        kx._spec.kind(name)(lambda *a: None)
 
 # ---------- data ----------
 def test_datasets_and_load() -> None:
@@ -305,3 +349,8 @@ def test_datasets_and_load() -> None:
 def test_load_unknown() -> None:
     with pytest.raises(ValueError, match="unknown dataset"):
         kx.load("nope")
+
+
+def test_version_comes_from_pyproject() -> None:
+    toml = (Path(kx.__file__).parent.parent / "pyproject.toml").read_text()
+    assert f'\nversion = "{kx.__version__}"\n' in toml

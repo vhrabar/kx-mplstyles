@@ -2,8 +2,8 @@ name: Publish to Kaggle
 on:
   push:
     branches: [main]
-    paths: ["kx.py", "styles/**", "data/**", "previews/**", "scripts/make_previews.py",
-            "README.md", "LICENSE", "dataset-metadata.json"]
+    paths: ["kx/**", "previews/**", "scripts/make_previews.py",
+            "README.md", "LICENSE", "dataset-metadata.json", "pyproject.toml"]
   workflow_dispatch:
 
 concurrency:
@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  DATASET: vhrabar/kx-mplstyles
+  DATASET: vhrabar/kx-plot
   KAGGLE_CLI: kaggle@2.2.4
 
 jobs:
@@ -39,7 +39,8 @@ jobs:
       - name: Stage only what Kaggle needs
         run: |
           mkdir build
-          cp -r kx.py styles data previews README.md LICENSE dataset-metadata.json build/
+          cp -r kx previews README.md LICENSE dataset-metadata.json pyproject.toml build/
+          find build -name __pycache__ -prune -exec rm -rf {} +
 
       - name: Create or version dataset
         id: push
