@@ -161,6 +161,29 @@ def test_palettes_discovers_new_files(tmp_path: Path, monkeypatch: pytest.Monkey
     assert kx.palette("mine") == ["#112233", "#AABBCC"]
 
 
+# ---------- colormaps ----------
+def test_cmaps_lists_matplotlib_builtins() -> None:
+    assert kx.cmaps() == sorted(kx.BUILTIN_CMAPS)   # all present on matplotlib >= 3.10
+
+
+def test_cmaps_skips_names_missing_from_matplotlib(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(kx, "BUILTIN_CMAPS", ("viridis", "notacmap"))
+    assert kx.cmaps() == ["viridis"]
+
+
+@pytest.mark.parametrize("name", kx.BUILTIN_CMAPS)
+def test_use_cmap_colours_scatter(name: str) -> None:
+    kx.use("light", cmap=name)
+    assert kx.plot(X, Y, Z, "scatter").collections[0].get_cmap().name == name
+
+
+def test_unknown_cmap_leaves_theme_untouched() -> None:
+    kx.use("dark")
+    with pytest.raises(ValueError, match="unknown cmap"):
+        kx.use("light", cmap="nope")
+    assert to_hex(mpl.rcParams["axes.facecolor"]) == "#111418"
+
+
 @pytest.mark.parametrize("fn", [kx.use, kx.show])
 def test_unknown_theme(fn) -> None:  # noqa: ANN001
     with pytest.raises(ValueError, match="unknown theme"):
@@ -198,7 +221,7 @@ def test_show_grammar_source(capsys: pytest.CaptureFixture[str]) -> None:
     assert "111418" in capsys.readouterr().out
     kx.grammar()
     out = capsys.readouterr().out
-    assert "scatter" in out and "dark" in out and "logy" in out and "okabe" in out
+    assert "scatter" in out and "dark" in out and "logy" in out and "okabe" in out and "vanimo" in out
     kx.source()
     assert "def plot(" in capsys.readouterr().out
 

@@ -7,6 +7,7 @@ Token grammar for kx.plot(spec):   kind-theme-flag-flag-...
   flags : grid | leg | logx | logy | tight
 
 Palettes (kx.use(theme, palette="okabe")): any file name in styles/palettes/
+Colormaps (kx.use(theme, cmap="magma")):  kx.cmaps()
 """
 import contextlib
 import glob
@@ -15,6 +16,7 @@ import os
 import sys
 from typing import Any
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -25,6 +27,8 @@ _root = os.path.dirname(os.path.abspath(__file__))
 
 KINDS = {"line", "scatter", "bar", "hist"}
 FLAGS = {"grid", "leg", "logx", "logy", "tight"}
+BUILTIN_CMAPS = ("viridis", "magma", "plasma", "inferno", "cividis", "turbo",
+                 "twilight", "coolwarm", "berlin", "managua", "vanimo")
 
 
 # ---------- discovery / transparency ----------
@@ -61,6 +65,11 @@ def _read_palette(name: str) -> list[str]:
         return [f"#{line}" for line in lines if line and not line.startswith("#")]
 
 
+def cmaps() -> list[str]:
+    """List supported colormap names that this matplotlib version has."""
+    return sorted(n for n in BUILTIN_CMAPS if n in mpl.colormaps)
+
+
 def show(name: str) -> None:
     """Print the contents of a style file."""
     with open(_style_path(name)) as f:
@@ -78,14 +87,21 @@ def grammar() -> None:
     print("theme:", styles())
     print("flags:", sorted(FLAGS))
     print("palettes (kx.use):", palettes())
+    print("cmaps    (kx.use):", cmaps())
 
 
 # ---------- setup ----------
-def use(name: str = "dark", palette: str | list[str] | None = None, **rc: Any) -> None:
-    """Apply a theme, optional palette (name from styles/palettes/ or list of colors), and rcParam overrides.
+def use(name: str = "dark", palette: str | list[str] | None = None, cmap: str | None = None,
+        **rc: Any) -> None:
+    """Apply a theme, optional palette (name from styles/palettes/ or list of colors),
+    colormap (one of kx.cmaps()), and rcParam overrides.
     Use double underscore for dots:  figure__figsize=(8, 4)  ->  figure.figsize
     """
+    if cmap is not None and cmap not in cmaps():
+        raise ValueError(f"unknown cmap {cmap!r}. Available: {cmaps()}")
     plt.style.use(["default", _style_path(name)])      # reset first so themes never mix
+    if cmap:
+        plt.rcParams["image.cmap"] = cmap
     if palette:
         colors = _read_palette(palette) if isinstance(palette, str) else list(palette)
         # swap only the colors; other cycled props (paper's linestyles) repeat to the new length
