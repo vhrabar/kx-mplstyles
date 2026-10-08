@@ -1,9 +1,11 @@
+from collections.abc import Callable
 from pathlib import Path
 
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.axes import Axes
 from matplotlib.colors import to_hex
 
 import kx
@@ -45,6 +47,74 @@ def test_scatter_colorbar_only_with_z(with_z: bool) -> None:
     ax = kx.plot(X, Y, Z if with_z else None, "scatter")
     assert len(ax.collections) == 1
     assert len(ax.figure.axes) == (2 if with_z else 1)
+
+
+def test_scatter_text_z_becomes_legend() -> None:
+    labels = np.where(Z > 2, "high", "low")
+    ax = kx.plot(X, Y, pd.Series(labels, name="level"), "scatter")
+    assert len(ax.figure.axes) == 1                    # no colorbar
+    assert len(ax.collections) == 2
+    leg = ax.get_legend()
+    assert leg.get_title().get_text() == "level"
+    assert [t.get_text() for t in leg.get_texts()] == ["high", "low"]
+    assert sum(len(c.get_offsets()) for c in ax.collections) == len(X)
+
+
+def test_scatter_categorical_keeps_category_order_and_bool_is_category() -> None:
+    cats = pd.Series(pd.Categorical(np.where(Z > 2, "b", "a"), categories=["b", "a"]))
+    assert [t.get_text() for t in kx.plot(X, Y, cats, "scatter").get_legend().get_texts()] == ["b", "a"]
+    assert [t.get_text() for t in kx.plot(X, Y, Z > 2, "scatter-leg").get_legend().get_texts()] == ["False", "True"]
+
+
+@pytest.mark.parametrize("with_z", [False, True])
+def test_step(with_z: bool) -> None:
+    ax = kx.plot(X, Y, Z if with_z else None, "step")
+    assert len(ax.lines) == (2 if with_z else 1)
+    assert all(ln.get_drawstyle() == "steps-mid" for ln in ax.lines)
+
+
+def test_area_overlaps_by_default() -> None:
+    ax = kx.plot(X, Y, Z, "area")
+    assert len(ax.lines) == 2 and len(ax.collections) == 2
+
+
+def test_area_stack() -> None:
+    ax = kx.plot(X, Y, Z, "area-stack-leg")
+    assert len(ax.collections) == 2 and len(ax.lines) == 0
+    top = ax.collections[1].get_paths()[0].vertices[:, 1].max()
+    assert top == pytest.approx((Y + Z).max())
+
+
+def test_area_norm_is_100_percent_stack() -> None:
+    ax = kx.plot(X, Y, Z, "area-norm")
+    top = ax.collections[1].get_paths()[0].vertices[:, 1].max()
+    assert top == pytest.approx(100)
+    assert ax.get_ylim() == (0, 100)
+    assert ax.yaxis.get_major_formatter()(50, 0) == "50%"
+
+
+def test_area_norm_legend_sits_outside() -> None:
+    leg = kx.plot(X, Y, Z, "area-norm-leg").get_legend()
+    assert leg.get_bbox_to_anchor().bounds[0] > leg.axes.bbox.bounds[0]    # anchored right of the axes
+
+
+def test_band_is_y_plus_minus_z() -> None:
+    ax = kx.plot(X, Y, np.full_like(Y, 0.5), "band-leg")
+    ys = ax.collections[0].get_paths()[0].vertices[:, 1]
+    assert ys.min() == pytest.approx(Y.min() - 0.5) and ys.max() == pytest.approx(Y.max() + 0.5)
+    assert to_hex(ax.collections[0].get_facecolor()[0]) == to_hex(ax.lines[0].get_color())
+    assert len(ax.get_legend().get_texts()) == 2
+
+
+@pytest.mark.parametrize("spec, call, match", [
+    ("band", lambda s: kx.plot(X, Y, spec=s), "needs z"),
+    ("area-norm", lambda s: kx.plot(X, Y, spec=s), "needs two series"),
+    ("line-stack", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
+    ("bar-norm", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
+])
+def test_new_kind_errors(spec: str, call: Callable[[str], Axes], match: str) -> None:
+    with pytest.raises(ValueError, match=match):
+        call(spec)
 
 
 @pytest.mark.parametrize("with_z", [False, True])

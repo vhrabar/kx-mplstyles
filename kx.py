@@ -2,9 +2,9 @@
 kx: tiny matplotlib helper.
 
 Token grammar for kx.plot(spec):   kind-theme-flag-flag-...
-  kind  : line | scatter | bar | hist
+  kind  : line | step | area | band | scatter | bar | hist
   theme : any file name in styles/
-  flags : grid | leg | logx | logy | tight
+  flags : grid | leg | logx | logy | tight | stack | norm  (stack and norm: area only)
 
 Palettes (kx.use(theme, palette="okabe")): any file name in styles/palettes/
 Colormaps (kx.use(theme, cmap="magma")):  kx.cmaps()
@@ -25,8 +25,9 @@ from numpy.typing import ArrayLike
 
 _root = os.path.dirname(os.path.abspath(__file__))
 
-KINDS = {"line", "scatter", "bar", "hist"}
-FLAGS = {"grid", "leg", "logx", "logy", "tight"}
+KINDS = {"line", "step", "area", "band", "scatter", "bar", "hist"}
+FLAGS = {"grid", "leg", "logx", "logy", "tight", "stack", "norm"}
+KIND_FLAGS = {"stack": {"area"}, "norm": {"area"}}
 BUILTIN_CMAPS = ("viridis", "magma", "plasma", "inferno", "cividis", "turbo",
                  "twilight", "coolwarm", "berlin", "managua", "vanimo")
 
@@ -139,13 +140,27 @@ def _parse(spec: str) -> tuple[str, str | None, set[str]]:
         raise ValueError(f"spec {spec!r} has more than one kind: {kinds}")
     if len(picked) > 1:
         raise ValueError(f"spec {spec!r} has more than one theme: {picked}")
-    return (kinds or ["line"])[0], (picked or [None])[0], set(toks) & FLAGS
+    kind = (kinds or ["line"])[0]
+    for flag in set(toks) & KIND_FLAGS.keys():
+        if kind not in KIND_FLAGS[flag]:
+            raise ValueError(f"flag {flag!r} only works with kind {sorted(KIND_FLAGS[flag])}, not {kind!r}")
+    return kind, (picked or [None])[0], set(toks) & FLAGS
 
 
 def _label(arr: ArrayLike, default: str) -> str:
     """Use a pandas Series name as legend label when there is one."""
     name = getattr(arr, "name", None)
     return str(name) if name is not None else default
+
+
+def _categories(z: ArrayLike) -> list[Any] | None:
+    """Category values of z if it is text, bool or categorical; None if z is numeric."""
+    s = z if isinstance(z, pd.Series) else pd.Series(np.asarray(z))
+    if isinstance(s.dtype, pd.CategoricalDtype):
+        return list(s.cat.categories)
+    if pd.api.types.is_numeric_dtype(s) and not pd.api.types.is_bool_dtype(s):
+        return None
+    return sorted(s.dropna().unique(), key=str)
 
 
 def plot(x: ArrayLike, y: ArrayLike | None = None, z: ArrayLike | str | None = None,
@@ -161,6 +176,10 @@ def plot(x: ArrayLike, y: ArrayLike | None = None, z: ArrayLike | str | None = N
     kind, theme, flags = _parse(spec or "line")
     if kind != "hist" and y is None:
         raise ValueError(f"kind {kind!r} needs both x and y")
+    if kind == "band" and z is None:
+        raise ValueError("kind 'band' needs z: the half-width of the band (y - z to y + z)")
+    if "norm" in flags and z is None:
+        raise ValueError("flag 'norm' needs two series (y and z) to split 100% between")
 
     style = plt.style.context(["default", _style_path(theme)]) if theme else contextlib.nullcontext()
     with style:
@@ -170,10 +189,42 @@ def plot(x: ArrayLike, y: ArrayLike | None = None, z: ArrayLike | str | None = N
             ax.plot(x, y, label=_label(y, "y"))
             if z is not None:
                 ax.plot(x, z, label=_label(z, "z"))
-        elif kind == "scatter":                 # z -> point color
-            sc = ax.scatter(x, y, c=z, s=0.5 * plt.rcParams["lines.markersize"] ** 2)
+        elif kind == "step":                    # like line, drawn as steps centred on each x
+            ax.step(x, y, where="mid", label=_label(y, "y"))
             if z is not None:
-                ax.figure.colorbar(sc, ax=ax, label=_label(z, "z"))
+                ax.step(x, z, where="mid", label=_label(z, "z"))
+        elif kind == "area":                    # filled; stack = on top of each other, norm = 100% stack
+            series = [(np.asarray(a, dtype=float), _label(a, n)) for a, n in ((y, "y"), (z, "z")) if a is not None]
+            if "norm" in flags:
+                total = sum(v for v, _ in series)
+                with np.errstate(invalid="ignore", divide="ignore"):
+                    series = [(100 * v / total, n) for v, n in series]
+                ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(100))
+                ax.set_ylim(0, 100)
+            if "stack" in flags or "norm" in flags:
+                ax.stackplot(x, *(v for v, _ in series), labels=[n for _, n in series])
+            else:
+                for v, n in series:
+                    line, = ax.plot(x, v, label=n)
+                    ax.fill_between(x, v, color=line.get_color(), alpha=0.3, linewidth=0)
+        elif kind == "band":                    # y line with a y ± z band
+            mid, half = np.asarray(y, dtype=float), np.asarray(z, dtype=float)
+            line, = ax.plot(x, mid, label=_label(y, "y"))
+            ax.fill_between(x, mid - half, mid + half, color=line.get_color(), alpha=0.25,
+                            linewidth=0, label=f"± {_label(z, 'z')}")
+        elif kind == "scatter":                 # z -> colorbar (numbers) or legend (categories)
+            size = 0.5 * plt.rcParams["lines.markersize"] ** 2
+            cats = None if z is None else _categories(z)
+            if cats is None:
+                sc = ax.scatter(x, y, c=z, s=size)
+                if z is not None:
+                    ax.figure.colorbar(sc, ax=ax, label=_label(z, "z"))
+            else:
+                xs, ys, zs = np.asarray(x), np.asarray(y), np.asarray(z, dtype=object)
+                for c in cats:
+                    m = zs == c
+                    ax.scatter(xs[m], ys[m], s=size, label=str(c))
+                ax.legend(title=_label(z, "z"))
         elif kind == "bar":                     # y and z grouped, x = category labels
             w = 0.4
             idx = np.arange(len(x))
@@ -189,7 +240,8 @@ def plot(x: ArrayLike, y: ArrayLike | None = None, z: ArrayLike | str | None = N
                     ax.hist(arr, bins=30, alpha=0.6, label=_label(arr, n))
 
         if "grid" in flags:  ax.grid(True)
-        if "leg" in flags:   ax.legend()
+        if "leg" in flags and ax.get_legend() is None:   # a 100% stack has no free corner: legend goes right
+            ax.legend(**({"loc": "center left", "bbox_to_anchor": (1, 0.5)} if "norm" in flags else {}))
         if "logx" in flags:  ax.set_xscale("log")
         if "logy" in flags:  ax.set_yscale("log")
         if title:            ax.set_title(title)
