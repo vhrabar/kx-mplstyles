@@ -17,10 +17,10 @@ import os
 from ._data import datasets, load
 from ._plot import plot
 from ._spec import COMMON_FLAGS, KINDS, all_flags
-from ._spec import parse as _parse
+from ._spec import parse as _parse  # noqa: F401  (tests)
 from ._theme import BUILTIN_CMAPS, cmaps, palette, palettes, show, styles, use
 
-__all__ = ["cmaps", "datasets", "grammar", "load", "palette", "palettes", "plot", "show",
+__all__ = ["BUILTIN_CMAPS", "cmaps", "datasets", "grammar", "load", "palette", "palettes", "plot", "show",
            "source", "styles", "use"]
 
 

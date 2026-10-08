@@ -25,7 +25,7 @@ def test_parse_defaults_to_line_and_no_theme() -> None:
     assert kx._parse("grid") == ("line", None, {"grid"})
 
 
-@pytest.mark.parametrize("spec, match", [
+@pytest.mark.parametrize(("spec", "match"), [
     ("line-nope", "unknown tokens"),
     ("line--dark", "unknown tokens"),
     ("line-scatter", "more than one kind"),
@@ -76,12 +76,14 @@ def test_step(with_z: bool) -> None:
 
 def test_area_overlaps_by_default() -> None:
     ax = kx.plot(X, Y, Z, "area")
-    assert len(ax.lines) == 2 and len(ax.collections) == 2
+    assert len(ax.lines) == 2
+    assert len(ax.collections) == 2
 
 
 def test_area_stack() -> None:
     ax = kx.plot(X, Y, Z, "area-stack-leg")
-    assert len(ax.collections) == 2 and len(ax.lines) == 0
+    assert len(ax.collections) == 2
+    assert len(ax.lines) == 0
     top = ax.collections[1].get_paths()[0].vertices[:, 1].max()
     assert top == pytest.approx((Y + Z).max())
 
@@ -102,12 +104,13 @@ def test_area_norm_legend_sits_outside() -> None:
 def test_band_is_y_plus_minus_z() -> None:
     ax = kx.plot(X, Y, np.full_like(Y, 0.5), "band-leg")
     ys = ax.collections[0].get_paths()[0].vertices[:, 1]
-    assert ys.min() == pytest.approx(Y.min() - 0.5) and ys.max() == pytest.approx(Y.max() + 0.5)
+    assert ys.min() == pytest.approx(Y.min() - 0.5)
+    assert ys.max() == pytest.approx(Y.max() + 0.5)
     assert to_hex(ax.collections[0].get_facecolor()[0]) == to_hex(ax.lines[0].get_color())
     assert len(ax.get_legend().get_texts()) == 2
 
 
-@pytest.mark.parametrize("spec, call, match", [
+@pytest.mark.parametrize(("spec", "call", "match"), [
     ("band", lambda s: kx.plot(X, Y, spec=s), "needs z"),
     ("area-norm", lambda s: kx.plot(X, Y, spec=s), "needs two series"),
     ("line-stack", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
@@ -165,7 +168,7 @@ def test_non_hist_needs_y() -> None:
 
 def test_draws_into_given_ax() -> None:
     import matplotlib.pyplot as plt
-    fig, (a, b) = plt.subplots(1, 2)
+    _, (a, b) = plt.subplots(1, 2)
     assert kx.plot(X, Y, "line", ax=b) is b
     assert len(a.lines) == 0
 
@@ -301,7 +304,11 @@ def test_show_grammar_source(capsys: pytest.CaptureFixture[str]) -> None:
     assert "111418" in capsys.readouterr().out
     kx.grammar()
     out = capsys.readouterr().out
-    assert "scatter" in out and "dark" in out and "logy" in out and "okabe" in out and "vanimo" in out
+    assert "scatter" in out
+    assert "dark" in out
+    assert "logy" in out
+    assert "okabe" in out
+    assert "vanimo" in out
     kx.source()
     assert "def plot(" in capsys.readouterr().out
 
@@ -310,10 +317,13 @@ def test_show_grammar_source(capsys: pytest.CaptureFixture[str]) -> None:
 def test_grammar_and_source_of_one_kind(capsys: pytest.CaptureFixture[str]) -> None:
     kx.grammar("area")
     out = capsys.readouterr().out
-    assert "100% stack" in out and "'norm'" in out and "'grid'" in out
+    assert "100% stack" in out
+    assert "'norm'" in out
+    assert "'grid'" in out
     kx.source("band")
     out = capsys.readouterr().out
-    assert out.lstrip().startswith("@kind(\"band\"") and "def scatter(" not in out
+    assert out.lstrip().startswith("@kind(\"band\"")
+    assert "def scatter(" not in out
 
 
 @pytest.mark.parametrize("fn", [kx.grammar, kx.source])

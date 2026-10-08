@@ -23,5 +23,8 @@ jobs:
       - name: Install dependencies from uv.lock
         run: uv sync --locked
 
+      - name: Lint
+        run: uv run --locked ruff check .
+
       - name: Run tests
         run: uv run --locked pytest -W error
