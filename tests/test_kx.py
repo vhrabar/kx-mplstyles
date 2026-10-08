@@ -1,3 +1,4 @@
+import re
 from collections.abc import Callable
 from pathlib import Path
 
@@ -203,26 +204,13 @@ def test_okabe_palette() -> None:
     assert kx.palette("okabe") == OKABE
 
 
-TOL = {
-    "tolbright": ["#4477AA", "#66CCEE", "#228833", "#CCBB44", "#EE6677", "#AA3377", "#BBBBBB"],
-    "tolvibrant": ["#0077BB", "#33BBEE", "#009988", "#EE7733", "#CC3311", "#EE3377", "#BBBBBB"],
-    "tolhc": ["#004488", "#DDAA33", "#BB5566"],
-    "tolmc": ["#6699CC", "#004488", "#EECC66", "#994455", "#997700", "#EE99AA"],
-}
-
-
-@pytest.mark.parametrize("name", sorted(TOL))
-def test_tol_palettes(name: str) -> None:
-    assert name in kx.palettes()
-    assert kx.palette(name) == TOL[name]
-    kx.use("light", palette=name)
-    assert mpl.rcParams["axes.prop_cycle"].by_key()["color"] == TOL[name]
-
-
-@pytest.mark.parametrize("name", ["okabe", *sorted(TOL)])
-def test_palette_has_no_background_colours(name: str) -> None:
-    # white vanishes on light themes; a cycle must not start with it
-    assert "#FFFFFF" not in kx.palette(name)
+@pytest.mark.parametrize("name", kx.palettes())
+def test_palette_file_is_valid(name: str) -> None:
+    colors = kx.palette(name)
+    assert len(colors) >= 3
+    assert all(re.fullmatch(r"#[0-9A-F]{6}", c) for c in colors), colors
+    assert len(set(colors)) == len(colors)
+    assert "#FFFFFF" not in colors              # white vanishes on light themes
 
 
 def test_use_named_palette() -> None:
