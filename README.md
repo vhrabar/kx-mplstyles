@@ -1,20 +1,31 @@
 # kx-plot
 
-One-line matplotlib plots and themes for Kaggle notebooks.
+One-line matplotlib plots and themes for notebooks and scripts.
 
-`kx` is a small, plain-Python package plus a folder of `.mplstyle` themes, pallets and colourmaps. It needs nothing beyond
-matplotlib, numpy and pandas, works offline, so it runs in competition notebooks too.
+`kx` is a small, plain-Python package with `.mplstyle` themes, palettes and colourmaps. It needs nothing beyond
+matplotlib, numpy and pandas and works offline, so it also runs in Kaggle competition notebooks.
 
 ![dark theme](previews/dark.png)
 
-## Setup
+## Install
 
-Attach the dataset (**Add Input → Datasets → `vhrabar/kx-plot`**) in a Kaggle notebook, then:
+```bash
+pip install kx-plot
+```
+
+```python
+import kx; kx.use('dark')
+```
+
+### Kaggle
+
+With internet off (competition notebooks), attach the dataset instead (**Add Input → Datasets → `vhrabar/kx-plot`**), then:
 
 ```python
 import sys; sys.path.append('/kaggle/input/datasets/vhrabar/kx-plot')
 import kx; kx.use('dark')
 ```
+
 ## Usage
 
 ```python
