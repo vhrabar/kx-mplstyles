@@ -2,7 +2,7 @@ name: Regenerate previews
 on:
   push:
     branches: [main, dev]
-    paths: ["kx.py", "styles/**", "data/**", "scripts/make_previews.py", "uv.lock"]
+    paths: ["kx/**", "styles/**", "data/**", "scripts/make_previews.py", "uv.lock"]
   workflow_dispatch:
 
 concurrency:

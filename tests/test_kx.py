@@ -247,7 +247,7 @@ def test_unknown_palette() -> None:
 def test_palettes_discovers_new_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "styles" / "palettes").mkdir(parents=True)
     (tmp_path / "styles" / "palettes" / "mine.txt").write_text("# comment\n\n112233\n  AABBCC  \n")
-    monkeypatch.setattr(kx, "_root", str(tmp_path))
+    monkeypatch.setattr(kx._files, "root", str(tmp_path))
     assert kx.palettes() == ["mine"]
     assert kx.styles() == []                    # the subfolder is not a theme
     assert kx.palette("mine") == ["#112233", "#AABBCC"]
@@ -259,7 +259,7 @@ def test_cmaps_lists_matplotlib_builtins() -> None:
 
 
 def test_cmaps_skips_names_missing_from_matplotlib(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(kx, "BUILTIN_CMAPS", ("viridis", "notacmap"))
+    monkeypatch.setattr(kx._theme, "BUILTIN_CMAPS", ("viridis", "notacmap"))
     assert kx.cmaps() == ["viridis"]
 
 
@@ -285,7 +285,7 @@ def test_unknown_theme(fn) -> None:  # noqa: ANN001
 def test_styles_discovers_new_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "styles").mkdir()
     (tmp_path / "styles" / "mine.mplstyle").write_text("lines.linewidth: 3\n")
-    monkeypatch.setattr(kx, "_root", str(tmp_path))
+    monkeypatch.setattr(kx._files, "root", str(tmp_path))
     assert kx.styles() == ["mine"]
     assert kx.plot(X, Y, "line-mine").lines[0].get_linewidth() == 3
 
@@ -317,6 +317,27 @@ def test_show_grammar_source(capsys: pytest.CaptureFixture[str]) -> None:
     kx.source()
     assert "def plot(" in capsys.readouterr().out
 
+
+
+def test_grammar_and_source_of_one_kind(capsys: pytest.CaptureFixture[str]) -> None:
+    kx.grammar("area")
+    out = capsys.readouterr().out
+    assert "100% stack" in out and "'norm'" in out and "'grid'" in out
+    kx.source("band")
+    out = capsys.readouterr().out
+    assert out.lstrip().startswith("@kind(\"band\"") and "def scatter(" not in out
+
+
+@pytest.mark.parametrize("fn", [kx.grammar, kx.source])
+def test_unknown_kind(fn) -> None:  # noqa: ANN001
+    with pytest.raises(ValueError, match="unknown kind"):
+        fn("nope")
+
+
+@pytest.mark.parametrize("name", ["line", "grid", "a-b"])
+def test_kind_names_stay_unique_tokens(name: str) -> None:
+    with pytest.raises(ValueError, match="taken"):
+        kx._spec.kind(name)(lambda *a: None)
 
 # ---------- data ----------
 def test_datasets_and_load() -> None:
