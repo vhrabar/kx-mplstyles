@@ -138,6 +138,18 @@ def test_styles_discovers_new_files(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert kx.plot(X, Y, "line-mine").lines[0].get_linewidth() == 3
 
 
+def test_paper_cycles_linestyles_for_greyscale_print() -> None:
+    ax = kx.plot(X, Y, Z, "line-paper")
+    assert ax.lines[0].get_linestyle() != ax.lines[1].get_linestyle()
+
+
+def test_scatter_size_follows_theme_markersize() -> None:
+    small = kx.plot(X, Y, "scatter-science").collections[0].get_sizes()[0]
+    large = kx.plot(X, Y, "scatter-poster").collections[0].get_sizes()[0]
+    assert kx.plot(X, Y, "scatter").collections[0].get_sizes()[0] == 18
+    assert small < 18 < large
+
+
 def test_every_shipped_style_loads() -> None:
     for name in kx.styles():
         kx.use(name)

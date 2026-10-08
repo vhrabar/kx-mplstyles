@@ -20,7 +20,8 @@ def render(theme: str, out_dir: str) -> str:
     """Draw a 2x2 grid (line, scatter, bar, hist) in `theme` and save it as PNG."""
     waves, cloud, monthly, dists = (kx.load(n) for n in ("waves", "cloud", "monthly", "dists"))
     kx.use(theme)
-    fig, axs = plt.subplots(2, 2, figsize=(12, 6))
+    w, h = plt.rcParams["figure.figsize"]
+    fig, axs = plt.subplots(2, 2, figsize=(2 * w, 2 * h))
     a = iter(axs.flat)
     kx.plot(waves.x, waves.y, waves.z, "line-leg", title="line", ax=next(a))
     kx.plot(cloud.x, cloud.y, cloud.z, "scatter", title="scatter", ax=next(a))

@@ -128,7 +128,7 @@ def plot(x: ArrayLike, y: ArrayLike | None = None, z: ArrayLike | str | None = N
             if z is not None:
                 ax.plot(x, z, label=_label(z, "z"))
         elif kind == "scatter":                 # z -> point color
-            sc = ax.scatter(x, y, c=z, s=18)
+            sc = ax.scatter(x, y, c=z, s=0.5 * plt.rcParams["lines.markersize"] ** 2)
             if z is not None:
                 ax.figure.colorbar(sc, ax=ax, label=_label(z, "z"))
         elif kind == "bar":                     # y and z grouped, x = category labels
