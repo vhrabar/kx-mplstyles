@@ -5,6 +5,8 @@ Token grammar for kx.plot(spec):   kind-theme-flag-flag-...
   kind  : line | scatter | bar | hist
   theme : any file name in styles/
   flags : grid | leg | logx | logy | tight
+
+Palettes (kx.use(theme, palette="okabe")): any file name in styles/palettes/
 """
 import contextlib
 import glob
@@ -39,6 +41,26 @@ def _style_path(name: str) -> str:
     return os.path.join(_root, "styles", f"{name}.mplstyle")
 
 
+def palettes() -> list[str]:
+    """List available palette names."""
+    return sorted(os.path.basename(p)[:-len(".txt")]
+                  for p in glob.glob(os.path.join(_root, "styles", "palettes", "*.txt")))
+
+
+def palette(name: str) -> list[str]:
+    """Colors of styles/palettes/<name>.txt as '#RRGGBB' strings (one hex per line, '#' lines are comments)."""
+    return _read_palette(name)
+
+
+def _read_palette(name: str) -> list[str]:
+    """palette() under a name that kx.use's `palette` argument does not shadow."""
+    if name not in palettes():
+        raise ValueError(f"unknown palette {name!r}. Available: {palettes()}")
+    with open(os.path.join(_root, "styles", "palettes", f"{name}.txt")) as f:
+        lines = (line.strip() for line in f)
+        return [f"#{line}" for line in lines if line and not line.startswith("#")]
+
+
 def show(name: str) -> None:
     """Print the contents of a style file."""
     with open(_style_path(name)) as f:
@@ -55,16 +77,21 @@ def grammar() -> None:
     print("kind :", sorted(KINDS))
     print("theme:", styles())
     print("flags:", sorted(FLAGS))
+    print("palettes (kx.use):", palettes())
 
 
 # ---------- setup ----------
-def use(name: str = "dark", palette: list[str] | None = None, **rc: Any) -> None:
-    """Apply a theme, optional palette (list of hex colors), and rcParam overrides.
+def use(name: str = "dark", palette: str | list[str] | None = None, **rc: Any) -> None:
+    """Apply a theme, optional palette (name from styles/palettes/ or list of colors), and rcParam overrides.
     Use double underscore for dots:  figure__figsize=(8, 4)  ->  figure.figsize
     """
     plt.style.use(["default", _style_path(name)])      # reset first so themes never mix
     if palette:
-        plt.rcParams["axes.prop_cycle"] = plt.cycler(color=palette)
+        colors = _read_palette(palette) if isinstance(palette, str) else list(palette)
+        # swap only the colors; other cycled props (paper's linestyles) repeat to the new length
+        rest = {k: v for k, v in plt.rcParams["axes.prop_cycle"].by_key().items() if k != "color"}
+        plt.rcParams["axes.prop_cycle"] = plt.cycler(
+            color=colors, **{k: [v[i % len(v)] for i in range(len(colors))] for k, v in rest.items()})
     plt.rcParams.update({k.replace("__", "."): v for k, v in rc.items()})
 
 

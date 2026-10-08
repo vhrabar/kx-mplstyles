@@ -124,6 +124,43 @@ def test_use_palette_and_rc_overrides() -> None:
     assert tuple(mpl.rcParams["figure.figsize"]) == (5, 2)
 
 
+# ---------- palettes ----------
+OKABE = ["#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000"]
+
+
+def test_okabe_palette() -> None:
+    assert "okabe" in kx.palettes()
+    assert kx.palette("okabe") == OKABE
+
+
+def test_use_named_palette() -> None:
+    kx.use("light", palette="okabe")
+    ax = kx.plot(X, Y, Z, "line")
+    assert [to_hex(ln.get_color()).upper() for ln in ax.lines] == OKABE[:2]
+
+
+def test_palette_keeps_theme_linestyles() -> None:
+    kx.use("paper", palette="okabe")
+    cycle = mpl.rcParams["axes.prop_cycle"].by_key()
+    assert cycle["color"] == OKABE
+    assert cycle["linestyle"][:6] == ["-", "--", ":", "-.", "-", "--"]
+    assert len(cycle["linestyle"]) == len(OKABE)
+
+
+def test_unknown_palette() -> None:
+    with pytest.raises(ValueError, match="unknown palette"):
+        kx.use("dark", palette="nope")
+
+
+def test_palettes_discovers_new_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "styles" / "palettes").mkdir(parents=True)
+    (tmp_path / "styles" / "palettes" / "mine.txt").write_text("# comment\n\n112233\n  AABBCC  \n")
+    monkeypatch.setattr(kx, "_root", str(tmp_path))
+    assert kx.palettes() == ["mine"]
+    assert kx.styles() == []                    # the subfolder is not a theme
+    assert kx.palette("mine") == ["#112233", "#AABBCC"]
+
+
 @pytest.mark.parametrize("fn", [kx.use, kx.show])
 def test_unknown_theme(fn) -> None:  # noqa: ANN001
     with pytest.raises(ValueError, match="unknown theme"):
@@ -161,7 +198,7 @@ def test_show_grammar_source(capsys: pytest.CaptureFixture[str]) -> None:
     assert "111418" in capsys.readouterr().out
     kx.grammar()
     out = capsys.readouterr().out
-    assert "scatter" in out and "dark" in out and "logy" in out
+    assert "scatter" in out and "dark" in out and "logy" in out and "okabe" in out
     kx.source()
     assert "def plot(" in capsys.readouterr().out
 
