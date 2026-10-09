@@ -297,6 +297,12 @@ def test_use_palette_and_rc_overrides() -> None:
 OKABE = ["#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7", "#000000"]
 
 
+@pytest.mark.parametrize(("name", "mpl_name"), [("set1", "Set1"), ("set2", "Set2"), ("dark2", "Dark2"),
+                                                ("paired", "Paired"), ("tab10", "tab10"), ("tab20", "tab20")])
+def test_palettes_match_matplotlib(name: str, mpl_name: str) -> None:
+    assert [c.lower() for c in kx.palette(name)] == [to_hex(c) for c in mpl.colormaps[mpl_name].colors]
+
+
 def test_okabe_palette() -> None:
     assert "okabe" in kx.palettes()
     assert kx.palette("okabe") == OKABE

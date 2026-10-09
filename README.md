@@ -61,10 +61,11 @@ other cycled properties (such as `paper`'s linestyles) stay.
 | Name                                     | Source             |
 |------------------------------------------|--------------------|
 | `okabe`                                  | Okabe & Ito (2008) |
-| `tolbright` `tolvibrant` `tolhc` `tolmc` | Paul Tol           |
+| `tolbright` `tolvibrant` `tollight`      | Paul Tol           |
+| `tolhc` `tolmc`                          | Paul Tol           |
 | `petroff6` `petroff8` `petroff10`        | Petroff (2021)     |
-| `tab10` `tableaucb`                      | Tableau            |
-| `set2` `dark2`                           | ColorBrewer        |
+| `tab10` `tab20` `tableaucb`              | Tableau            |
+| `set1` `set2` `dark2` `paired`           | ColorBrewer        |
 | `ibm`                                    | IBM Design Colors  |
 
 `kx.palette('okabe')` returns the hex codes. A list of colours works too: `palette=['#264653', '#e9c46a']`.

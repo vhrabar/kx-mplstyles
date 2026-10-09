@@ -162,7 +162,7 @@ express Statement of Purpose.
 ```
 
 ```
-set2 and dark2 colour palettes
+set1, set2, dark2 and paired colour palettes
 
 Copyright (c) 2002 Cynthia Brewer, Mark Harrower, and The Pennsylvania State University.
 

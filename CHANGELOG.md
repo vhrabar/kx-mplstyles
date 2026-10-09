@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Crameri colourmaps (Scientific colour maps 8) `batlow`, `lipari`, `hawaii`, `oslo`, `davos`, `vik`, `roma`,
   `bam`, `cork` and cyclic `romaO`, vendored the same way.
 - `kx.use(cmap="<name>_r")` reverses any colourmap in `kx.cmaps()`.
+- Palettes `tollight` (Paul Tol), `set1` and `paired` (ColorBrewer) and `tab20` (Tableau, 20 categories).
 
 ### Changed
 
