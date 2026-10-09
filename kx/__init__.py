@@ -2,9 +2,11 @@
 kx: tiny matplotlib helper.
 
 Token grammar for kx.plot(spec):   kind-theme-flag-flag-...
-  kind  : line | step | area | band | scatter | bar | hist
+  kind  : line | step | area | band | scatter | bar | barh | hist | kde | ecdf | box | violin
   theme : any file name in styles/
-  flags : grid | leg | logx | logy | tight | stack | norm  (stack and norm: area only)
+  flags : grid | leg | logx | logy | tight | stack | norm | cum
+          (stack: area, bar, barh, hist; norm: area, hist; cum: hist)
+by=    : group labels for x, one curve/box/violin per group (kde, ecdf, box, violin)
 
 Palettes (kx.use(theme, palette="okabe")): any file name in styles/palettes/
 Colormaps (kx.use(theme, cmap="magma")):  kx.cmaps()
@@ -20,10 +22,10 @@ from ._data import datasets, load
 from ._plot import plot
 from ._spec import COMMON_FLAGS, KINDS, all_flags
 from ._spec import parse as _parse  # noqa: F401  (tests)
-from ._theme import BUILTIN_CMAPS, cmaps, palette, palettes, show, styles, use
+from ._theme import BUILTIN_CMAPS, VENDORED_CMAPS, cmaps, palette, palettes, show, styles, use
 
-__all__ = ["BUILTIN_CMAPS", "__version__", "cmaps", "datasets", "grammar", "load", "palette", "palettes", "plot",
-           "show", "source", "styles", "use"]
+__all__ = ["BUILTIN_CMAPS", "VENDORED_CMAPS", "__version__", "cmaps", "datasets", "grammar", "load", "palette",
+           "palettes", "plot", "show", "source", "styles", "use"]
 
 
 def _version() -> str:
@@ -57,6 +59,8 @@ def grammar(kind: str | None = None) -> None:
         k = _kind(kind)
         print(f"{k.name}: {inspect.getdoc(k.draw)}")
         print("flags:", sorted(COMMON_FLAGS), "+", sorted(k.flags) or "none of its own")
+        if k.takes_by:
+            print("by=  : group labels for x, one per group")
         return
     print("kind :", sorted(KINDS))
     print("theme:", styles())

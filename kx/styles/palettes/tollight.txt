@@ -1,0 +1,11 @@
+# Paul Tol Light: 9 light colours for filled cells and areas, colour-blind safe
+# https://sronpersonalpages.nl/~pault/
+77AADD
+EE8866
+EEDD88
+FFAABB
+99DDFF
+44BB99
+BBCC33
+AAAA00
+DDDDDD

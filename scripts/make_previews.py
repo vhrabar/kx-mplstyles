@@ -1,5 +1,5 @@
 """
-Render previews/<theme>.png for every theme: all four kinds on the bundled demo CSVs.
+Render previews/<theme>.png for every theme: every kind on the bundled demo CSVs.
 """
 import os
 import sys
@@ -17,16 +17,26 @@ import kx  # noqa: E402
 
 
 def render(theme: str, out_dir: str) -> str:
-    """Draw a 2x2 grid (line, scatter, bar, hist) in `theme` and save it as PNG."""
+    """Draw a 3x4 grid with one panel per kind in `theme` and save it as PNG."""
     waves, cloud, monthly, dists = (kx.load(n) for n in ("waves", "cloud", "monthly", "dists"))
+    spread = (0.1 + waves.x / 40).rename("std")
+    samples = (dists.normal, dists.skewed, dists.bimodal)
     kx.use(theme)
     w, h = plt.rcParams["figure.figsize"]
-    fig, axs = plt.subplots(2, 2, figsize=(2 * w, 2 * h))
+    fig, axs = plt.subplots(3, 4, figsize=(4 * w, 3 * h))
     a = iter(axs.flat)
     kx.plot(waves.x, waves.y, waves.z, "line-leg", title="line", ax=next(a))
+    kx.plot(monthly.month, monthly.y2025, monthly.y2026, "step-leg", title="step", ax=next(a))
+    kx.plot(monthly.month, monthly.y2025, monthly.y2026, "area-stack-leg", title="area-stack", ax=next(a))
+    kx.plot(waves.x, waves.y, spread, "band-leg", title="band", ax=next(a))
     kx.plot(cloud.x, cloud.y, cloud.z, "scatter", title="scatter", ax=next(a))
     kx.plot(monthly.month, monthly.y2025, monthly.y2026, "bar-leg", title="bar", ax=next(a))
-    kx.plot(dists.normal, dists.skewed, dists.bimodal, "hist-leg", title="hist", ax=next(a))
+    kx.plot(monthly.month, monthly.y2025, monthly.y2026, "barh-stack-leg", title="barh-stack", ax=next(a))
+    kx.plot(*samples, spec="hist-leg", title="hist", ax=next(a))
+    kx.plot(*samples, spec="kde-leg", title="kde", ax=next(a))
+    kx.plot(*samples, spec="ecdf-leg", title="ecdf", ax=next(a))
+    kx.plot(*samples, spec="box", title="box", ax=next(a))
+    kx.plot(*samples, spec="violin", title="violin", ax=next(a))
     fig.suptitle(theme)
     fig.tight_layout()
     path = os.path.join(out_dir, f"{theme}.png")

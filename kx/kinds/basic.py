@@ -79,14 +79,26 @@ def scatter(ax: Axes, x: ArrayLike, y: ArrayLike, z: ArrayLike | None, flags: se
         ax.legend(title=label(z, "z"))
 
 
-@kind("bar")
-def bar(ax: Axes, x: ArrayLike, y: ArrayLike, z: ArrayLike | None, flags: set[str]) -> None:
-    """y and z grouped, x = category labels."""
+@kind("bar", flags=("stack",))
+def bar(ax: Axes, x: ArrayLike, y: ArrayLike, z: ArrayLike | None, flags: set[str],
+        horizontal: bool = False) -> None:
+    """y and z grouped per category, x = category labels; stack = z on top of y."""
     w = 0.4
     idx = np.arange(len(x))
+    draw = ax.barh if horizontal else ax.bar
     if z is None:
-        ax.bar(idx, y, 2 * w, label=label(y, "y"))
+        draw(idx, y, 2 * w, label=label(y, "y"))
+    elif "stack" in flags:                      # z starts where y ends, so the bar's end is the total
+        draw(idx, y, 2 * w, label=label(y, "y"))
+        draw(idx, z, 2 * w, np.asarray(y, dtype=float), label=label(z, "z"))
     else:
-        ax.bar(idx - w / 2, y, w, label=label(y, "y"))
-        ax.bar(idx + w / 2, z, w, label=label(z, "z"))
-    ax.set_xticks(idx, [str(v) for v in x])
+        draw(idx - w / 2, y, w, label=label(y, "y"))
+        draw(idx + w / 2, z, w, label=label(z, "z"))
+    (ax.set_yticks if horizontal else ax.set_xticks)(idx, [str(v) for v in x])
+
+
+@kind("barh", flags=("stack",))
+def barh(ax: Axes, x: ArrayLike, y: ArrayLike, z: ArrayLike | None, flags: set[str]) -> None:
+    """Like bar, lying down: categories (x) top to bottom, bar lengths along the x axis."""
+    bar(ax, x, y, z, flags, horizontal=True)
+    ax.invert_yaxis()                           # first category on top, read like a table
