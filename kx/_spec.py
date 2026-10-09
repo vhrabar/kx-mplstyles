@@ -16,18 +16,19 @@ class Kind:
     flags: frozenset[str]                       # kind-specific flags, on top of COMMON_FLAGS
     needs_y: bool
     check: Callable[[Any, Any, set[str]], None] | None     # check(y, z, flags) raises on bad input
+    takes_by: bool = False                      # draw also gets by= (group labels for x)
 
 
 KINDS: dict[str, Kind] = {}
 
 
 def kind(name: str, flags: tuple[str, ...] = (), needs_y: bool = True,
-         check: Callable[[Any, Any, set[str]], None] | None = None) -> Callable:
+         check: Callable[[Any, Any, set[str]], None] | None = None, takes_by: bool = False) -> Callable:
     """Decorator that registers a draw function as kind `name`."""
     def register(draw: Callable[..., None]) -> Callable[..., None]:
         if name in KINDS or name in COMMON_FLAGS or "-" in name:
             raise ValueError(f"kind name {name!r} is taken or has a '-'")
-        KINDS[name] = Kind(name, draw, frozenset(flags), needs_y, check)
+        KINDS[name] = Kind(name, draw, frozenset(flags), needs_y, check, takes_by)
         return draw
     return register
 

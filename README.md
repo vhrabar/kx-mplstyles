@@ -19,7 +19,7 @@ import kx; kx.use('dark')
 
 ### Kaggle
 
-With internet off (competition notebooks), attach the dataset instead (**Add Input → Datasets → `vhrabar/kx-plot`**), then:
+Attach the dataset instead (**Add Input → Datasets → `vhrabar/kx-plot`**), then:
 
 ```python
 import sys; sys.path.append('/kaggle/input/datasets/vhrabar/kx-plot')
@@ -32,20 +32,26 @@ import kx; kx.use('dark')
 kx.use('light', palette='okabe', cmap='cividis')   # notebook default: theme, palette, colormap
 kx.plot(x, y, z, 'scatter-grid-leg')               # spec: kind-theme-flag-...
 kx.plot(x, y, 'bar-paper')                         # a theme in the spec applies to this plot only
+kx.plot(df.value, spec='kde', by=df.group)         # one density curve per group
 ```
 
-| Token | Values                                                              |
-|-------|---------------------------------------------------------------------|
-| kind  | `line` `step` `area` `band` `scatter` `bar` `barh` `hist`           |
-| theme | `dark` `light` `paper` `science` `talk` `poster` `thesis`           |
-| flags | `grid` `leg` `logx` `logy` `tight`, plus `stack` `norm` (see below) |
+| Token | Values                                                                |
+|-------|-----------------------------------------------------------------------|
+| kind  | `line` `step` `area` `band` `scatter` `bar` `barh` `hist` `kde`       |
+| theme | `dark` `light` `paper` `science` `talk` `poster` `thesis`             |
+| flags | `grid` `leg` `logx` `logy` `tight`, plus `stack` `norm` `cum` (below) |
 
-`stack` works with `area`, `bar` and `barh`; `norm` (100% stack) with `area`.
+`stack` works with `area`, `bar`, `barh` and `hist`. `norm` is a 100% stack for `area` and a
+density (area 1) for `hist`. `cum` makes `hist` cumulative; `hist-norm-cum` is the CDF.
+`hist` puts every series on the same bins, so the bars line up.
 
 Unknown tokens raise an error instead of being guessed. Everything is inspectable:
 `kx.grammar()`, `kx.grammar('area')`, `kx.show('dark')`, `kx.source('scatter')`.
 
 rcParams can be overridden in `kx.use` with `__` for dots: `kx.use('dark', figure__figsize=(8, 4))`.
+
+Every kind, option, flag and config, with its output, is in the
+[Example Usage notebook](https://github.com/vhrabar/kx-plot/blob/main/Example%20Usage.ipynb).
 
 ## Palettes
 

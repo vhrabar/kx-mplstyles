@@ -10,8 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - **Plot kinds**
   - `barh`: horizontal bars, first category on top. `y` and `z` are grouped like `bar`.
+  - `kde`: smooth density curves (Gaussian KDE in numpy, no scipy needed), one per array.
 - **Flags**
   - `stack` now works with `bar` and `barh`: `z` is drawn on top of `y`, so the bar's end is the total.
+  - `stack`, `norm` (density) and the new `cum` (cumulative) work with `hist`.
+- `kx.plot(..., by=groups)` splits `x` into one curve per group (for `kde`).
+
+### Changed
+
+- `hist` puts every series on the same bins, so overlaid bars line up.
 
 ## [0.1.0] - 2026-10-08
 

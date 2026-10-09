@@ -115,7 +115,12 @@ def test_band_is_y_plus_minus_z() -> None:
     ("area-norm", lambda s: kx.plot(X, Y, spec=s), "needs two series"),
     ("line-stack", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
     ("bar-norm", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
-    ("hist-stack", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
+    ("line-cum", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
+    ("kde-stack", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
+    ("hist", lambda s: kx.plot(X, spec=s, by=X > 5), "by= only works with kind"),
+    ("kde", lambda s: kx.plot(X, Y, spec=s, by=X > 5), "pass only x"),
+    ("kde", lambda s: kx.plot(X, spec=s, by=[1, 2]), "has 2 values but x has 20"),
+    ("kde", lambda s: kx.plot(np.ones(5), spec=s), "at least 2 distinct"),
 ])
 def test_new_kind_errors(spec: str, call: Callable[[str], Axes], match: str) -> None:
     with pytest.raises(ValueError, match=match):
@@ -156,6 +161,73 @@ def test_barh_categories_top_to_bottom(with_z: bool) -> None:
 def test_hist_overlays_each_array(arrays: int) -> None:
     ax = kx.plot(*[X, Y, Z][:arrays], spec="hist")
     assert len(ax.containers) == arrays
+
+
+def test_hist_shares_bins_across_arrays() -> None:
+    ax = kx.plot(np.arange(10.0), np.arange(5.0, 20.0), spec="hist")
+    lefts = [[p.get_x() for p in c] for c in ax.containers]
+    assert lefts[0] == lefts[1]
+    assert lefts[0][0] == 0
+    assert lefts[0][-1] + ax.containers[0][-1].get_width() == pytest.approx(19)
+
+
+def test_hist_stack_puts_y_on_top_of_x() -> None:
+    ax = kx.plot(np.arange(10.0), np.arange(10.0), spec="hist-stack-leg")
+    xs, ys = ax.containers
+    assert [p.get_y() for p in ys] == [p.get_height() for p in xs]
+    assert [t.get_text() for t in ax.get_legend().get_texts()] == ["x", "y"]
+
+
+@pytest.mark.parametrize(("spec", "total"), [("hist-norm", None), ("hist-cum", 20), ("hist-norm-cum", 1)])
+def test_hist_norm_and_cum(spec: str, total: float | None) -> None:
+    ax = kx.plot(X, spec=spec)
+    if total is None:                           # density: bar areas sum to 1
+        assert sum(p.get_height() * p.get_width() for p in ax.containers[0]) == pytest.approx(1)
+    else:                                       # cumulative outline: ends at everything
+        assert ax.patches[0].get_xy()[:, 1].max() == pytest.approx(total)
+
+
+def test_hist_ignores_nan() -> None:
+    ax = kx.plot(np.r_[X, np.nan, np.inf], spec="hist-cum")
+    assert ax.patches[0].get_xy()[:, 1].max() == len(X)
+
+
+def test_hist_stack_cum_keeps_filled_bars() -> None:
+    ax = kx.plot(X, Y, spec="hist-stack-cum")
+    assert ax.containers[1][-1].get_y() + ax.containers[1][-1].get_height() == 2 * len(X)
+
+
+@pytest.mark.parametrize("arrays", [1, 2, 3])
+def test_kde_draws_a_curve_per_array_with_area_one(arrays: int) -> None:
+    ax = kx.plot(*[X, Y, Z][:arrays], spec="kde-leg")
+    assert len(ax.lines) == arrays
+    for ln in ax.lines:
+        gx, gy = ln.get_data()
+        assert (gy.sum() * (gx[1] - gx[0])) == pytest.approx(1, abs=1e-3)       # even grid: area = sum * step
+    assert [t.get_text() for t in ax.get_legend().get_texts()] == ["x", "y", "z"][:arrays]
+
+
+def test_kde_matches_gaussian_formula() -> None:
+    from kx.kinds.dist import density
+    v, grid = np.array([0.0, 1.0]), np.array([0.0, 0.5])
+    expected = (np.exp(-0.5 * ((grid[:, None] - v) / 0.5) ** 2) / (0.5 * np.sqrt(2 * np.pi))).mean(axis=1)
+    assert density(v, grid, 0.5) == pytest.approx(expected)
+
+
+def test_kde_by_groups() -> None:
+    df = pd.DataFrame({"v": np.r_[X, X + 20], "g": ["a"] * len(X) + ["b"] * len(X)})
+    ax = kx.plot(df.v, spec="kde", by=df.g)
+    assert len(ax.lines) == 2
+    peaks = [ln.get_xdata()[np.argmax(ln.get_ydata())] for ln in ax.lines]
+    assert peaks[0] < 12 < peaks[1]
+    leg = ax.get_legend()
+    assert leg.get_title().get_text() == "g"
+    assert [t.get_text() for t in leg.get_texts()] == ["a", "b"]
+
+
+def test_kde_by_numeric_groups_sorted() -> None:
+    ax = kx.plot(np.r_[X, X], spec="kde", by=[2] * len(X) + [1] * len(X))
+    assert [t.get_text() for t in ax.get_legend().get_texts()] == ["1", "2"]
 
 
 # ---------- flags, title, labels ----------
