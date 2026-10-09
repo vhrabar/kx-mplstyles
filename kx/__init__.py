@@ -2,9 +2,9 @@
 kx: tiny matplotlib helper.
 
 Token grammar for kx.plot(spec):   kind-theme-flag-flag-...
-  kind  : line | step | area | band | scatter | bar | hist
+  kind  : line | step | area | band | scatter | bar | barh | hist
   theme : any file name in styles/
-  flags : grid | leg | logx | logy | tight | stack | norm  (stack and norm: area only)
+  flags : grid | leg | logx | logy | tight | stack | norm  (stack: area, bar, barh; norm: area)
 
 Palettes (kx.use(theme, palette="okabe")): any file name in styles/palettes/
 Colormaps (kx.use(theme, cmap="magma")):  kx.cmaps()

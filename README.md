@@ -34,11 +34,13 @@ kx.plot(x, y, z, 'scatter-grid-leg')               # spec: kind-theme-flag-...
 kx.plot(x, y, 'bar-paper')                         # a theme in the spec applies to this plot only
 ```
 
-| Token | Values                                                             |
-|-------|--------------------------------------------------------------------|
-| kind  | `line` `step` `area` `band` `scatter` `bar` `hist`                 |
-| theme | `dark` `light` `paper` `science` `talk` `poster` `thesis`          |
-| flags | `grid` `leg` `logx` `logy` `tight`, plus `stack` `norm` for `area` |
+| Token | Values                                                              |
+|-------|---------------------------------------------------------------------|
+| kind  | `line` `step` `area` `band` `scatter` `bar` `barh` `hist`           |
+| theme | `dark` `light` `paper` `science` `talk` `poster` `thesis`           |
+| flags | `grid` `leg` `logx` `logy` `tight`, plus `stack` `norm` (see below) |
+
+`stack` works with `area`, `bar` and `barh`; `norm` (100% stack) with `area`.
 
 Unknown tokens raise an error instead of being guessed. Everything is inspectable:
 `kx.grammar()`, `kx.grammar('area')`, `kx.show('dark')`, `kx.source('scatter')`.

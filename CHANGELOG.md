@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Plot kinds**
+  - `barh`: horizontal bars, first category on top. `y` and `z` are grouped like `bar`.
+- **Flags**
+  - `stack` now works with `bar` and `barh`: `z` is drawn on top of `y`, so the bar's end is the total.
+
 ## [0.1.0] - 2026-10-08
 
 ### Added

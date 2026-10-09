@@ -115,6 +115,7 @@ def test_band_is_y_plus_minus_z() -> None:
     ("area-norm", lambda s: kx.plot(X, Y, spec=s), "needs two series"),
     ("line-stack", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
     ("bar-norm", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
+    ("hist-stack", lambda s: kx.plot(X, Y, Z, s), "only works with kind"),
 ])
 def test_new_kind_errors(spec: str, call: Callable[[str], Axes], match: str) -> None:
     with pytest.raises(ValueError, match=match):
@@ -127,6 +128,28 @@ def test_bar_groups_and_category_ticks(with_z: bool) -> None:
     ax = kx.plot(cats, [1, 2, 3], [3, 2, 1] if with_z else None, "bar")
     assert len(ax.patches) == (6 if with_z else 3)
     assert [t.get_text() for t in ax.get_xticklabels()] == cats
+
+
+@pytest.mark.parametrize("name", ["bar", "barh"])
+def test_bar_stack_puts_z_on_top_of_y(name: str) -> None:
+    ax = kx.plot(["a", "b", "c"], [1, 2, 3], [3, 2, 1], f"{name}-stack-leg")
+    _, z_bars = ax.containers
+    start, length, thickness = ("get_x", "get_width", "get_height") if name == "barh" \
+        else ("get_y", "get_height", "get_width")
+    assert [getattr(p, start)() for p in z_bars] == [1, 2, 3]
+    assert [getattr(p, start)() + getattr(p, length)() for p in z_bars] == [4, 4, 4]
+    assert {getattr(p, thickness)() for p in ax.patches} == {0.8}          # full width, not split
+    assert [t.get_text() for t in ax.get_legend().get_texts()] == ["y", "z"]
+
+
+@pytest.mark.parametrize("with_z", [False, True])
+def test_barh_categories_top_to_bottom(with_z: bool) -> None:
+    cats = ["a", "b", "c"]
+    ax = kx.plot(cats, [1, 2, 3], [3, 2, 1] if with_z else None, "barh")
+    assert len(ax.patches) == (6 if with_z else 3)
+    assert [p.get_width() for p in ax.containers[0]] == [1, 2, 3]
+    assert [t.get_text() for t in ax.get_yticklabels()] == cats
+    assert ax.yaxis_inverted()
 
 
 @pytest.mark.parametrize("arrays", [1, 2, 3])
