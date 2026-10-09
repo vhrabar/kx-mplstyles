@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `stack` now works with `bar` and `barh`: `z` is drawn on top of `y`, so the bar's end is the total.
   - `stack`, `norm` (density) and the new `cum` (cumulative) work with `hist`.
 - `kx.plot(..., by=groups)` splits `x` into one curve, box or violin per group (for `kde`, `ecdf`, `box`, `violin`).
-- cmocean colourmaps `thermal`, `haline`, `deep` and `balance` for `kx.use(cmap=...)
+- cmocean colourmaps `thermal`, `haline`, `deep` and `balance` for `kx.use(cmap=...)`.
 - Crameri colourmaps (Scientific colour maps 8) `batlow`, `lipari`, `hawaii`, `oslo`, `davos`, `vik`, `roma`,
   `bam`, `cork` and cyclic `romaO`, vendored the same way.
 - `kx.use(cmap="<name>_r")` reverses any colourmap in `kx.cmaps()`.
