@@ -2,11 +2,11 @@
 kx: tiny matplotlib helper.
 
 Token grammar for kx.plot(spec):   kind-theme-flag-flag-...
-  kind  : line | step | area | band | scatter | bar | barh | hist | kde
+  kind  : line | step | area | band | scatter | bar | barh | hist | kde | ecdf | box | violin
   theme : any file name in styles/
   flags : grid | leg | logx | logy | tight | stack | norm | cum
           (stack: area, bar, barh, hist; norm: area, hist; cum: hist)
-by=    : group labels for x, one curve per group (kde)
+by=    : group labels for x, one curve/box/violin per group (kde, ecdf, box, violin)
 
 Palettes (kx.use(theme, palette="okabe")): any file name in styles/palettes/
 Colormaps (kx.use(theme, cmap="magma")):  kx.cmaps()
@@ -60,7 +60,7 @@ def grammar(kind: str | None = None) -> None:
         print(f"{k.name}: {inspect.getdoc(k.draw)}")
         print("flags:", sorted(COMMON_FLAGS), "+", sorted(k.flags) or "none of its own")
         if k.takes_by:
-            print("by=  : group labels for x, one curve per group")
+            print("by=  : group labels for x, one per group")
         return
     print("kind :", sorted(KINDS))
     print("theme:", styles())

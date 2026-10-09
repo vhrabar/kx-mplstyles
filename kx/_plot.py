@@ -15,7 +15,8 @@ def plot(x: ArrayLike, y: ArrayLike | None = None, z: ArrayLike | str | None = N
          by: ArrayLike | None = None) -> Axes:
     """kx.plot(x, y, z, 'scatter-dark-grid-leg')   or   kx.plot(x, y, 'bar-light')
 
-    by= gives a group label per x value, one curve per group: kx.plot(df.value, spec='kde', by=df.group).
+    by= gives a group label per x value, one curve, box or violin per group:
+    kx.plot(df.value, spec='kde', by=df.group).
 
     A theme in the spec applies to this plot only; kx.use() sets the notebook default.
     """

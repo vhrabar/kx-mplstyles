@@ -11,10 +11,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Plot kinds**
   - `barh`: horizontal bars, first category on top. `y` and `z` are grouped like `bar`.
   - `kde`: smooth density curves (Gaussian KDE in numpy, no scipy needed), one per array.
+  - `ecdf`: empirical CDF, the share of values at or below each x, one step curve per array.
+  - `box`: box plots side by side (median, quartiles, 1.5 IQR whiskers, outliers), one per array.
+  - `violin`: violin plots side by side with the median and quartiles marked, one per array.
 - **Flags**
   - `stack` now works with `bar` and `barh`: `z` is drawn on top of `y`, so the bar's end is the total.
   - `stack`, `norm` (density) and the new `cum` (cumulative) work with `hist`.
-- `kx.plot(..., by=groups)` splits `x` into one curve per group (for `kde`).
+- `kx.plot(..., by=groups)` splits `x` into one curve, box or violin per group (for `kde`, `ecdf`, `box`, `violin`).
 - cmocean colourmaps `thermal`, `haline`, `deep` and `balance` for `kx.use(cmap=...)
 - Crameri colourmaps (Scientific colour maps 8) `batlow`, `lipari`, `hawaii`, `oslo`, `davos`, `vik`, `roma`,
   `bam`, `cork` and cyclic `romaO`, vendored the same way.

@@ -121,6 +121,10 @@ def test_band_is_y_plus_minus_z() -> None:
     ("kde", lambda s: kx.plot(X, Y, spec=s, by=X > 5), "pass only x"),
     ("kde", lambda s: kx.plot(X, spec=s, by=[1, 2]), "has 2 values but x has 20"),
     ("kde", lambda s: kx.plot(np.ones(5), spec=s), "at least 2 distinct"),
+    ("ecdf", lambda s: kx.plot(X, Y, spec=s, by=X > 5), "pass only x"),
+    ("box", lambda s: kx.plot([np.nan], spec=s), "needs a finite value"),
+    ("violin", lambda s: kx.plot(np.ones(5), spec=s), "at least 2 distinct"),
+    ("box-stack", lambda s: kx.plot(X, spec=s), "only works with kind"),
 ])
 def test_new_kind_errors(spec: str, call: Callable[[str], Axes], match: str) -> None:
     with pytest.raises(ValueError, match=match):
@@ -228,6 +232,56 @@ def test_kde_by_groups() -> None:
 def test_kde_by_numeric_groups_sorted() -> None:
     ax = kx.plot(np.r_[X, X], spec="kde", by=[2] * len(X) + [1] * len(X))
     assert [t.get_text() for t in ax.get_legend().get_texts()] == ["1", "2"]
+
+
+@pytest.mark.parametrize("arrays", [1, 2, 3])
+def test_ecdf_steps_from_zero_to_one(arrays: int) -> None:
+    ax = kx.plot(*[X, Y, Z][:arrays], spec="ecdf-leg")
+    assert len(ax.lines) == arrays
+    gx, gy = ax.lines[0].get_data()
+    assert gy[0] == 0
+    assert gy[-1] == 1
+    assert list(gx[1:]) == sorted(X)
+    assert [t.get_text() for t in ax.get_legend().get_texts()] == ["x", "y", "z"][:arrays]
+
+
+def test_ecdf_ignores_nan_and_counts_ties() -> None:
+    ax = kx.plot([1.0, 2.0, 2.0, np.nan, 4.0], spec="ecdf")
+    gx, gy = ax.lines[0].get_data()
+    assert list(gx) == [1, 1, 2, 2, 4]
+    assert list(gy) == [0, 0.25, 0.5, 0.75, 1]
+
+
+def test_ecdf_by_groups() -> None:
+    ax = kx.plot(pd.Series(np.r_[X, X + 20]), spec="ecdf", by=pd.Series(["a"] * 20 + ["b"] * 20, name="g"))
+    assert len(ax.lines) == 2
+    assert ax.get_legend().get_title().get_text() == "g"
+
+
+@pytest.mark.parametrize("kind", ["box", "violin"])
+def test_box_and_violin_one_per_array(kind: str) -> None:
+    ax = kx.plot(X, pd.Series(Y, name="sin"), Z, spec=kind)
+    assert [t.get_text() for t in ax.get_xticklabels()] == ["x", "sin", "z"]
+
+
+@pytest.mark.parametrize("kind", ["box", "violin"])
+def test_box_and_violin_by_groups(kind: str) -> None:
+    df = pd.DataFrame({"v": np.r_[X, X + 20], "g": pd.Categorical(["b"] * 20 + ["a"] * 20, ["b", "a"])})
+    ax = kx.plot(df.v, spec=kind, by=df.g)
+    assert [t.get_text() for t in ax.get_xticklabels()] == ["b", "a"]
+    assert ax.get_xlabel() == "g"
+
+
+def test_box_median_and_colours() -> None:
+    ax = kx.plot(X, X + 5, spec="box")
+    assert ax.lines[4].get_ydata()[0] == pytest.approx(np.median(X))     # whiskers, caps, then median
+    faces = [to_hex(p.get_facecolor(), keep_alpha=False) for p in ax.patches]
+    assert faces[0] != faces[1]
+
+
+def test_violin_marks_median() -> None:
+    ax = kx.plot(X, spec="violin")
+    assert ax.collections[-1].get_offsets()[0][1] == pytest.approx(np.median(X))
 
 
 # ---------- flags, title, labels ----------
