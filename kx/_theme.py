@@ -9,7 +9,9 @@ from . import _files
 
 BUILTIN_CMAPS = ("viridis", "magma", "plasma", "inferno", "cividis", "turbo",
                  "twilight", "coolwarm", "berlin", "managua", "vanimo")
-VENDORED_CMAPS = ("thermal", "haline", "deep", "balance")     # cmocean, styles/cmaps/<name>.txt
+# styles/cmaps/<name>.txt: cmocean, then Crameri's Scientific colour maps 8
+VENDORED_CMAPS = ("thermal", "haline", "deep", "balance",
+                  "batlow", "lipari", "hawaii", "oslo", "davos", "vik", "roma", "bam", "cork", "romaO")
 
 
 def styles() -> list[str]:

@@ -84,6 +84,9 @@ Add `_r` to any name to reverse it, e.g. `cmap="thermal_r"`.
 | `twilight`                                     | Cyclic, for angles and phases    |
 | `thermal` `haline` `deep`                      | Sequential, cmocean (vendored)   |
 | `balance`                                      | Diverging, cmocean (vendored)    |
+| `batlow` `lipari` `hawaii` `oslo` `davos`      | Sequential, Crameri (vendored)   |
+| `vik` `roma` `bam` `cork`                      | Diverging, Crameri (vendored)    |
+| `romaO`                                        | Cyclic, Crameri (vendored)       |
 
 `kx.cmaps()` lists the ones that are available in the installed matplotlib as those implemented in matplotlib 3.10 or newer
 are not vendored.
