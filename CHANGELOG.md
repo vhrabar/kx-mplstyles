@@ -15,6 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `stack` now works with `bar` and `barh`: `z` is drawn on top of `y`, so the bar's end is the total.
   - `stack`, `norm` (density) and the new `cum` (cumulative) work with `hist`.
 - `kx.plot(..., by=groups)` splits `x` into one curve per group (for `kde`).
+- cmocean colourmaps `thermal`, `haline`, `deep` and `balance` for `kx.use(cmap=...)
+- `kx.use(cmap="<name>_r")` reverses any colourmap in `kx.cmaps()`.
 
 ### Changed
 

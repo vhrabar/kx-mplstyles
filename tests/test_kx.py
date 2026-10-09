@@ -341,16 +341,31 @@ def test_palettes_discovers_new_files(tmp_path: Path, monkeypatch: pytest.Monkey
 
 # ---------- colormaps ----------
 def test_cmaps_lists_matplotlib_builtins() -> None:
-    assert kx.cmaps() == sorted(n for n in kx.BUILTIN_CMAPS if n in mpl.colormaps)
+    assert kx.cmaps() == sorted(n for n in kx.BUILTIN_CMAPS + kx.VENDORED_CMAPS if n in mpl.colormaps)
     assert set(kx.BUILTIN_CMAPS) - {"berlin", "managua", "vanimo"} <= set(kx.cmaps())   # only these need 3.10
 
 
 def test_cmaps_skips_names_missing_from_matplotlib(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(kx._theme, "BUILTIN_CMAPS", ("viridis", "notacmap"))
+    monkeypatch.setattr(kx._theme, "VENDORED_CMAPS", ())
     assert kx.cmaps() == ["viridis"]
 
 
-@pytest.mark.parametrize("name", kx.BUILTIN_CMAPS)
+@pytest.mark.parametrize("name", kx.VENDORED_CMAPS)
+def test_vendored_cmaps_are_registered(name: str) -> None:
+    assert mpl.colormaps[name].N == 256
+    assert name in kx.cmaps()
+
+
+@pytest.mark.parametrize("name", ["viridis", *kx.VENDORED_CMAPS])
+def test_use_reversed_cmap(name: str) -> None:
+    kx.use("light", cmap=f"{name}_r")
+    rev = kx.plot(X, Y, Z, "scatter").collections[0].get_cmap()
+    assert rev.name == f"{name}_r"
+    assert to_hex(rev(1.0)) == to_hex(mpl.colormaps[name](0.0))
+
+
+@pytest.mark.parametrize("name", kx.BUILTIN_CMAPS + kx.VENDORED_CMAPS)
 def test_use_cmap_colours_scatter(name: str) -> None:
     if name not in mpl.colormaps:
         pytest.skip(f"{name} needs a newer matplotlib")
@@ -362,6 +377,8 @@ def test_unknown_cmap_leaves_theme_untouched() -> None:
     kx.use("dark")
     with pytest.raises(ValueError, match="unknown cmap"):
         kx.use("light", cmap="nope")
+    with pytest.raises(ValueError, match="unknown cmap"):
+        kx.use("light", cmap="nope_r")
     assert to_hex(mpl.rcParams["axes.facecolor"]) == "#111418"
 
 

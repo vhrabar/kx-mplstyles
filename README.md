@@ -73,6 +73,7 @@ other cycled properties (such as `paper`'s linestyles) stay.
 
 Colourmaps for `kx.use(theme, cmap=...)` colour continuous values, such as a numeric `z` in `scatter`.
 Without `cmap`, the theme's own default applies.
+Add `_r` to any name to reverse it, e.g. `cmap="thermal_r"`.
 
 | Name                                           | Type                             |
 |------------------------------------------------|----------------------------------|
@@ -81,6 +82,8 @@ Without `cmap`, the theme's own default applies.
 | `coolwarm`                                     | Diverging                        |
 | `berlin` `managua` `vanimo`                    | Diverging, dark centre           |
 | `twilight`                                     | Cyclic, for angles and phases    |
+| `thermal` `haline` `deep`                      | Sequential, cmocean (vendored)   |
+| `balance`                                      | Diverging, cmocean (vendored)    |
 
 `kx.cmaps()` lists the ones that are available in the installed matplotlib as those implemented in matplotlib 3.10 or newer
 are not vendored.
@@ -92,4 +95,5 @@ Released under the MIT License. See [`LICENSE`](https://github.com/vhrabar/kx-pl
 
 Copyright © 2026 Vedran Hrabar
 
-Vendored palettes keep their own licences; see [`kx/styles/palettes/LICENCES.md`](https://github.com/vhrabar/kx-plot/blob/main/kx/styles/palettes/LICENCES.md).
+Vendored palettes and colourmaps keep their own licences; see [`kx/styles/palettes/LICENCES.md`](https://github.com/vhrabar/kx-plot/blob/main/kx/styles/palettes/LICENCES.md)
+and [`kx/styles/cmaps/LICENCES.md`](https://github.com/vhrabar/kx-plot/blob/main/kx/styles/cmaps/LICENCES.md).

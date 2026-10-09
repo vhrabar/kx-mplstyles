@@ -22,10 +22,10 @@ from ._data import datasets, load
 from ._plot import plot
 from ._spec import COMMON_FLAGS, KINDS, all_flags
 from ._spec import parse as _parse  # noqa: F401  (tests)
-from ._theme import BUILTIN_CMAPS, cmaps, palette, palettes, show, styles, use
+from ._theme import BUILTIN_CMAPS, VENDORED_CMAPS, cmaps, palette, palettes, show, styles, use
 
-__all__ = ["BUILTIN_CMAPS", "__version__", "cmaps", "datasets", "grammar", "load", "palette", "palettes", "plot",
-           "show", "source", "styles", "use"]
+__all__ = ["BUILTIN_CMAPS", "VENDORED_CMAPS", "__version__", "cmaps", "datasets", "grammar", "load", "palette",
+           "palettes", "plot", "show", "source", "styles", "use"]
 
 
 def _version() -> str:
