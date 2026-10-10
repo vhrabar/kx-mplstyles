@@ -5,7 +5,10 @@ from typing import Any
 
 from ._theme import styles
 
-COMMON_FLAGS = {"grid", "leg", "logx", "logy", "tight"}     # handled by kx.plot for every kind
+COMMON_FLAGS = {"grid", "leg", "legout", "tight", "rot",                   # handled by kx.plot for every kind
+                "logx", "logy", "logxy", "symlogy", "zero", "eq", "pct", "si"}
+EXCLUSIVE = ({"logy", "logxy", "symlogy"}, {"logx", "logxy"}, {"zero", "logy"}, {"zero", "logxy"},
+             {"pct", "si"}, {"sym", "logc"})                                # pairs that ask for opposite things
 
 
 @dataclass(frozen=True)
@@ -17,18 +20,20 @@ class Kind:
     needs_y: bool
     check: Callable[[Any, Any, set[str]], None] | None     # check(y, z, flags) raises on bad input
     takes_by: bool = False                      # draw also gets by= (group labels for x)
+    value_axis: str = "y"                       # where pct, si and zero apply: "x" for barh
 
 
 KINDS: dict[str, Kind] = {}
 
 
 def kind(name: str, flags: tuple[str, ...] = (), needs_y: bool = True,
-         check: Callable[[Any, Any, set[str]], None] | None = None, takes_by: bool = False) -> Callable:
+         check: Callable[[Any, Any, set[str]], None] | None = None, takes_by: bool = False,
+         value_axis: str = "y") -> Callable:
     """Decorator that registers a draw function as kind `name`."""
     def register(draw: Callable[..., None]) -> Callable[..., None]:
         if name in KINDS or name in COMMON_FLAGS or "-" in name:
             raise ValueError(f"kind name {name!r} is taken or has a '-'")
-        KINDS[name] = Kind(name, draw, frozenset(flags), needs_y, check, takes_by)
+        KINDS[name] = Kind(name, draw, frozenset(flags), needs_y, check, takes_by, value_axis)
         return draw
     return register
 
@@ -55,4 +60,7 @@ def parse(spec: str) -> tuple[str, str | None, set[str]]:
     for flag in sorted(set(toks) & (flags - COMMON_FLAGS - KINDS[kind].flags)):
         owners = sorted(k.name for k in KINDS.values() if flag in k.flags)
         raise ValueError(f"flag {flag!r} only works with kind {owners}, not {kind!r}")
+    for group in EXCLUSIVE:
+        if len(both := sorted(group & set(toks))) > 1:
+            raise ValueError(f"flags {both} do not go together; pick one")
     return kind, (picked or [None])[0], set(toks) & flags

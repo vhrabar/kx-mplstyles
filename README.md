@@ -36,11 +36,12 @@ kx.plot(df.value, spec='kde', by=df.group)         # one density curve per group
 kx.plot(df.value, spec='box', by=df.group)         # one box per group (also ecdf, violin)
 ```
 
-| Token | Values                                                                                |
-|-------|---------------------------------------------------------------------------------------|
-| kind  | `line` `step` `area` `band` `scatter` `bar` `barh` `hist` `kde` `ecdf` `box` `violin` |
-| theme | `dark` `light` `paper` `science` `talk` `poster` `thesis`                             |
-| flags | `grid` `leg` `logx` `logy` `tight`, plus `stack` `norm` `cum` (below)                 |
+| Token | Values                                                                                      |
+|-------|---------------------------------------------------------------------------------------------|
+| kind  | `line` `step` `area` `band` `scatter` `bar` `barh` `hist` `kde` `ecdf` `box` `violin`       |
+| theme | `dark` `light` `paper` `science` `talk` `poster` `thesis`                                   |
+| flags | `grid` `leg` `legout` `tight` `rot` `logx` `logy` `logxy` `symlogy` `zero` `eq` `pct` `si`  |
+|       | per kind: `stack` `norm` `cum` `date` `mk` `sort` `ann` `mean` `median` `nocb` `sym` `logc` |
 
 `stack` works with `area`, `bar`, `barh` and `hist`. `norm` is a 100% stack for `area` and a
 density (area 1) for `hist`. `cum` makes `hist` cumulative; `hist-norm-cum` is the CDF.

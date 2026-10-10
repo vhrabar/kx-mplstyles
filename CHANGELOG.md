@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+
+- **Flags for every kind**
+  - Layout: `legout` puts the legend outside on the right, keeping a kind's legend title. `rot` rotates the x tick
+    labels 45°.
+  - Axes: `logxy` (log on both), `symlogy` (symmetric log y, so negatives work), `zero` (the value axis includes 0)
+    and `eq` (equal aspect).
+  - Number format: `pct` (0.25 → 25%) and `si` (1500 → 1.5k) on the value axis, which is x for `barh` and y
+    otherwise.
+- **Flags for some kinds**
+  - `date` for `line`, `step`, `area`, `band` and `scatter`: `x` is read as dates (text works too) and gets compact
+    date ticks.
+  - `mk` for `line`, `step`, `area` and `band`: a marker on every point.
+  - `sort` for `bar` and `barh`: largest first, by `y`, or by the total with `stack`.
+  - `ann` for `bar` and `barh`: the value on each bar, inside each segment with `stack`.
+  - `mean` and `median` for `hist`, `kde` and `ecdf`: a dashed / dotted line at each series' mean / median.
+    `mean` for `box` and `violin`: a diamond at each mean. `ann` writes the values.
+  - `nocb`, `sym` and `logc` for `scatter` with a numeric `z`: no colorbar, colour limits symmetric around 0,
+    log colour scale.
+- Flags that ask for opposite things (`pct` and `si`, `logy` and `logxy`, `zero` and a log y, `sym` and `logc`)
+  raise an error.
+
 ## [0.2.0] - 2026-10-09
 
 ### Added

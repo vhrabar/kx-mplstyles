@@ -293,6 +293,111 @@ def test_flags() -> None:
     assert ax.get_title() == "t"
 
 
+def test_scale_flags() -> None:
+    ax = kx.plot(X, Y, "line-logxy")
+    assert ax.get_xscale() == ax.get_yscale() == "log"
+    assert kx.plot(X, Z, "line-symlogy").get_yscale() == "symlog"
+    assert kx.plot(X, Y, "line-eq").get_aspect() == 1
+
+
+@pytest.mark.parametrize(("name", "lim"), [("line", "get_ylim"), ("barh", "get_xlim")])
+def test_zero_stretches_the_value_axis(name: str, lim: str) -> None:
+    ax = kx.plot(X, Y + 10, f"{name}-zero")
+    lo, hi = getattr(ax, lim)()
+    assert min(lo, hi) == 0
+
+
+@pytest.mark.parametrize(("spec", "axis", "value", "text"), [
+    ("bar-pct", "yaxis", 0.25, "25%"), ("barh-pct", "xaxis", 0.25, "25%"), ("line-si", "yaxis", 1500, "1.5k"),
+])
+def test_number_format_on_the_value_axis(spec: str, axis: str, value: float, text: str) -> None:
+    ax = kx.plot(["a", "b"], [0.1, 0.2], spec=spec) if "bar" in spec else kx.plot(X, Y, spec=spec)
+    out = getattr(ax, axis).get_major_formatter()(value, 0)
+    assert out.replace(".0%", "%") == text       # PercentFormatter adds decimals on a narrow range
+
+
+def test_pct_keeps_area_norm_percent() -> None:
+    assert kx.plot(X, Y, Z, "area-norm-pct").yaxis.get_major_formatter()(50, 0) == "50%"
+
+
+def test_legout_moves_a_kinds_own_legend_and_keeps_its_title() -> None:
+    ax = kx.plot(np.r_[X, X], spec="kde-legout", by=pd.Series(["a"] * 20 + ["b"] * 20, name="g"))
+    leg = ax.get_legend()
+    assert leg.get_title().get_text() == "g"
+    assert leg.get_bbox_to_anchor().bounds[0] > leg.axes.bbox.bounds[0]
+
+
+def test_rot_turns_x_tick_labels() -> None:
+    ax = kx.plot(["a", "b", "c"], [1, 2, 3], "bar-rot")
+    assert {t.get_rotation() for t in ax.get_xticklabels()} == {45}
+
+
+def test_date_reads_text_as_dates() -> None:
+    days = pd.Series(pd.date_range("2026-01-01", periods=len(X)).strftime("%Y-%m-%d"))
+    ax = kx.plot(days, Y, "line-date")
+    assert isinstance(ax.xaxis.get_major_formatter(), mpl.dates.ConciseDateFormatter)
+    assert mpl.dates.num2date(ax.lines[0].get_xdata(orig=False)[0]).year == 2026
+
+
+@pytest.mark.parametrize("name", ["line", "step", "band", "area"])
+def test_mk_marks_every_point(name: str) -> None:
+    assert kx.plot(X, Y, Z, f"{name}-mk").lines[0].get_marker() == "o"
+
+
+@pytest.mark.parametrize(("spec", "order"), [("bar-sort", ["b", "c", "a"]), ("bar-sort-stack", ["c", "b", "a"])])
+def test_sort_largest_first(spec: str, order: list[str]) -> None:
+    ax = kx.plot(["a", "b", "c"], pd.Series([1, 3, 2], name="v"), [0, 0, 5], spec + "-leg")
+    assert [t.get_text() for t in ax.get_xticklabels()] == order
+    assert ax.get_legend().get_texts()[0].get_text() == "v"
+
+
+def test_ann_writes_bar_values() -> None:
+    ax = kx.plot(["a", "b"], [1.5, 20], "bar-ann")
+    assert [t.get_text() for t in ax.texts] == ["1.5", "20"]
+
+
+@pytest.mark.parametrize("name", ["hist", "kde", "ecdf"])
+def test_mean_and_median_lines(name: str) -> None:
+    v = np.r_[X, 100.0]
+    ax = kx.plot(v, spec=f"{name}-mean-median-ann")
+    marks = [ln.get_xdata()[0] for ln in ax.lines if ln.get_linestyle() in ("--", ":")]
+    assert marks == pytest.approx([v.mean(), np.median(v)])
+    assert [t.get_text() for t in ax.texts] == [f"{v.mean():.3g}", f"{np.median(v):.3g}"]
+
+
+@pytest.mark.parametrize("name", ["box", "violin"])
+def test_box_and_violin_mean_and_ann(name: str) -> None:
+    ax = kx.plot(X, X + 5, spec=f"{name}-mean-ann")
+    assert list(ax.collections[-1].get_offsets()[:, 1]) == pytest.approx([X.mean(), X.mean() + 5])
+    assert ax.texts[0].get_text().startswith(f"{np.median(X):.3g}")
+
+
+def test_scatter_colour_flags() -> None:
+    ax = kx.plot(X, Y, Z - 2, "scatter-sym-nocb")
+    lo, hi = ax.collections[0].get_clim()
+    assert lo == -hi
+    assert len(ax.figure.axes) == 1
+    assert isinstance(kx.plot(X, Y, Y, "scatter-logc").collections[0].norm, mpl.colors.LogNorm)
+
+
+@pytest.mark.parametrize(("spec", "call", "match"), [
+    ("line-pct-si", lambda s: kx.plot(X, Y, spec=s), "do not go together"),
+    ("line-logy-logxy", lambda s: kx.plot(X, Y, spec=s), "do not go together"),
+    ("line-zero-logy", lambda s: kx.plot(X, Y, spec=s), "do not go together"),
+    ("scatter-sym-logc", lambda s: kx.plot(X, Y, Z, s), "do not go together"),
+    ("hist-date", lambda s: kx.plot(X, spec=s), "only works with kind"),
+    ("line-sort", lambda s: kx.plot(X, Y, spec=s), "only works with kind"),
+    ("hist-ann", lambda s: kx.plot(X, spec=s), "add 'mean' or 'median'"),
+    ("area-stack-mk", lambda s: kx.plot(X, Y, Z, s), "a stack has no lines"),
+    ("scatter-nocb", lambda s: kx.plot(X, Y, spec=s), "colour a numeric z"),
+    ("scatter-sym", lambda s: kx.plot(X, Y, Z > 2, s), "colour a numeric z"),
+    ("scatter-logc", lambda s: kx.plot(X, Y, Z - 2, s), "needs z > 0"),
+])
+def test_flag_errors(spec: str, call: Callable[[str], Axes], match: str) -> None:
+    with pytest.raises(ValueError, match=match):
+        call(spec)
+
+
 def test_series_names_become_labels() -> None:
     df = pd.DataFrame({"x": X, "speed": Y, "accel": Z})
     ax = kx.plot(df.x, df.speed, df.accel, "line-leg")

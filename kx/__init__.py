@@ -4,8 +4,9 @@ kx: tiny matplotlib helper.
 Token grammar for kx.plot(spec):   kind-theme-flag-flag-...
   kind  : line | step | area | band | scatter | bar | barh | hist | kde | ecdf | box | violin
   theme : any file name in styles/
-  flags : grid | leg | logx | logy | tight | stack | norm | cum
-          (stack: area, bar, barh, hist; norm: area, hist; cum: hist)
+  flags : grid | leg | legout | tight | rot | logx | logy | logxy | symlogy | zero | eq | pct | si
+          and per kind: stack norm cum (bars, area, hist), date mk (lines), sort ann (bars),
+          mean median ann (distributions), nocb sym logc (scatter). kx.grammar(kind) lists them.
 by=    : group labels for x, one curve/box/violin per group (kde, ecdf, box, violin)
 
 Palettes (kx.use(theme, palette="okabe")): any file name in styles/palettes/
