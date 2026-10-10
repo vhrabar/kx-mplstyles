@@ -1,4 +1,6 @@
 """Distribution kinds."""
+from typing import Any
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -66,20 +68,21 @@ def _vlines(ax: Axes, series: list[tuple[np.ndarray, str]], flags: set[str]) -> 
 
 
 @kind("hist", flags=("stack", "norm", "cum", *STATS), needs_y=False, check=_check_stats)
-def hist(ax: Axes, x: ArrayLike, y: ArrayLike | None, z: ArrayLike | None, flags: set[str]) -> None:
+def hist(ax: Axes, x: ArrayLike, y: ArrayLike | None, z: ArrayLike | None, flags: set[str], **kw: Any) -> None:
     """Up to three distributions x, y, z on the same 30 bins, overlaid.
     stack = on top of each other, norm = density (area 1), cum = cumulative outlines (with norm: the CDF).
-    mean / median = dashed / dotted line at each series' mean / median, ann = with its value."""
+    mean / median = dashed / dotted line at each series' mean / median, ann = with its value.
+    kw: ax.hist; bins= (a count, edges or a numpy rule like 'auto') replaces the 30 shared bins."""
     series = _series(x, y, z)
-    edges = np.histogram_bin_edges(np.concatenate([v for v, _ in series]), bins=30)
+    edges = np.histogram_bin_edges(np.concatenate([v for v, _ in series]), bins=kw.pop("bins", 30))
     values, names = [v for v, _ in series], [n for _, n in series]
     if "stack" in flags:
-        ax.hist(values, edges, histtype="barstacked", label=names,
-                density="norm" in flags, cumulative="cum" in flags)
+        ax.hist(values, edges, **{"histtype": "barstacked", "label": names,
+                                  "density": "norm" in flags, "cumulative": "cum" in flags, **kw})
     else:                                       # overlaid cumulative fills hide each other: outlines instead
         look = {"histtype": "step", "linewidth": 1.5} if "cum" in flags else {"alpha": 0.6}
         for v, n in zip(values, names, strict=True):
-            ax.hist(v, edges, label=n, density="norm" in flags, cumulative="cum" in flags, **look)
+            ax.hist(v, edges, **{"label": n, "density": "norm" in flags, "cumulative": "cum" in flags, **look, **kw})
     _vlines(ax, series, flags)
 
 
@@ -100,9 +103,9 @@ def bandwidth(v: np.ndarray) -> float:
 
 @kind("kde", flags=STATS, needs_y=False, takes_by=True, check=_check_stats)
 def kde(ax: Axes, x: ArrayLike, y: ArrayLike | None, z: ArrayLike | None, flags: set[str],
-        by: ArrayLike | None = None) -> None:
+        by: ArrayLike | None = None, **kw: Any) -> None:
     """Smooth density curves of x, y, z (Gaussian KDE, Silverman bandwidth).
-    by= splits x into one curve per group: kx.plot(df.value, spec='kde', by=df.group)."""
+    by= splits x into one curve per group: kx.plot(df.value, spec='kde', by=df.group). kw: the curves (ax.plot)."""
     series = _split(x, y, z, by)
     _need(series, "kde", 2)
     bws = [bandwidth(v) for v, _ in series]
@@ -111,7 +114,7 @@ def kde(ax: Axes, x: ArrayLike, y: ArrayLike | None, z: ArrayLike | None, flags:
     grid = np.linspace(lo, hi, 256)
     for (v, n), bw in zip(series, bws, strict=True):
         d = density(v, grid, bw)
-        ln, = ax.plot(grid, d, label=n)
+        ln, = ax.plot(grid, d, **{"label": n, **kw})
         ax.fill_between(grid, d, color=ln.get_color(), alpha=0.15, linewidth=0)
     ax.set_ylim(bottom=0)
     _vlines(ax, series, flags)
@@ -121,14 +124,14 @@ def kde(ax: Axes, x: ArrayLike, y: ArrayLike | None, z: ArrayLike | None, flags:
 
 @kind("ecdf", flags=STATS, needs_y=False, takes_by=True, check=_check_stats)
 def ecdf(ax: Axes, x: ArrayLike, y: ArrayLike | None, z: ArrayLike | None, flags: set[str],
-         by: ArrayLike | None = None) -> None:
+         by: ArrayLike | None = None, **kw: Any) -> None:
     """Empirical CDF of x, y, z: the share of values <= each x, a step up of 1/n at every value.
-    by= splits x into one curve per group."""
+    by= splits x into one curve per group. kw: ax.step."""
     series = _split(x, y, z, by)
     _need(series, "ecdf", 1)
     for v, n in series:
         v = np.sort(v)
-        ax.step(np.r_[v[0], v], np.arange(len(v) + 1) / len(v), where="post", label=n)
+        ax.step(np.r_[v[0], v], np.arange(len(v) + 1) / len(v), **{"where": "post", "label": n, **kw})
     ax.set_ylim(0, 1.02)
     _vlines(ax, series, flags)
     if by is not None:
@@ -154,15 +157,17 @@ def _per_group(ax: Axes, series: list[tuple[np.ndarray, str]], flags: set[str], 
 
 @kind("box", flags=("mean", "ann"), needs_y=False, takes_by=True)
 def box(ax: Axes, x: ArrayLike, y: ArrayLike | None, z: ArrayLike | None, flags: set[str],
-        by: ArrayLike | None = None) -> None:
+        by: ArrayLike | None = None, **kw: Any) -> None:
     """Box plots of x, y, z side by side: median, quartile box, whiskers to 1.5 IQR, outliers as points.
-    by= splits x into one box per group. mean = a diamond at the mean, ann = the median (and mean) as text."""
+    by= splits x into one box per group. mean = a diamond at the mean, ann = the median (and mean) as text.
+    kw: ax.boxplot, e.g. showfliers=False, widths=0.3."""
     series = _split(x, y, z, by)
     _need(series, "box", 1)
     ink = plt.rcParams["text.color"]           # whiskers and medians in the theme's ink, not black on dark
     line = {"color": ink}
-    parts = ax.boxplot([v for v, _ in series], patch_artist=True, boxprops={"edgecolor": ink}, medianprops=line,
-                       whiskerprops=line, capprops=line, flierprops={"markeredgecolor": ink})
+    parts = ax.boxplot([v for v, _ in series], **{"patch_artist": True, "boxprops": {"edgecolor": ink},
+                                                  "medianprops": line, "whiskerprops": line, "capprops": line,
+                                                  "flierprops": {"markeredgecolor": ink}, **kw})
     for i, patch in enumerate(parts["boxes"]):
         patch.set_facecolor((*mpl.colors.to_rgb(f"C{i}"), 0.7))      # alpha on the fill only, edge stays solid
     _per_group(ax, series, flags, by)
@@ -170,13 +175,14 @@ def box(ax: Axes, x: ArrayLike, y: ArrayLike | None, z: ArrayLike | None, flags:
 
 @kind("violin", flags=("mean", "ann"), needs_y=False, takes_by=True)
 def violin(ax: Axes, x: ArrayLike, y: ArrayLike | None, z: ArrayLike | None, flags: set[str],
-           by: ArrayLike | None = None) -> None:
+           by: ArrayLike | None = None, **kw: Any) -> None:
     """Violin plots of x, y, z side by side: a mirrored KDE with the median and quartiles marked.
-    by= splits x into one violin per group. mean = a diamond at the mean, ann = the median (and mean) as text."""
+    by= splits x into one violin per group. mean = a diamond at the mean, ann = the median (and mean) as text.
+    kw: ax.violinplot, e.g. widths=0.5."""
     series = _split(x, y, z, by)
     _need(series, "violin", 2)
     values = [v for v, _ in series]
-    parts = ax.violinplot(values, showextrema=False)
+    parts = ax.violinplot(values, **{"showextrema": False, **kw})
     for i, body in enumerate(parts["bodies"]):
         body.set(facecolor=f"C{i}", edgecolor=f"C{i}", alpha=0.6)
     pos = np.arange(1, len(values) + 1)

@@ -1,5 +1,7 @@
 """kx.plot: the one-liner. Kinds live in kx/kinds/; this file checks input and applies common flags."""
 import contextlib
+import difflib
+from typing import Any
 
 import matplotlib as mpl
 import matplotlib.dates as mdates
@@ -15,20 +17,19 @@ from ._theme import style_path
 OUTSIDE = {"loc": "center left", "bbox_to_anchor": (1, 0.5)}       # legend right of the axes
 
 
-def plot(x: ArrayLike, y: ArrayLike | None = None, z: ArrayLike | str | None = None,
-         spec: str | None = None, title: str | None = None, ax: Axes | None = None,
-         by: ArrayLike | None = None) -> Axes:
+def plot(*data: ArrayLike | pd.DataFrame | str, spec: str | None = None, title: str | None = None,
+         ax: Axes | None = None, by: ArrayLike | str | None = None, **kwargs: Any) -> Axes:
     """kx.plot(x, y, z, 'scatter-dark-grid-leg')   or   kx.plot(x, y, 'bar-light')
+    kx.plot(df, 'month', 'y2025', 'y2026', 'bar')   names columns of a DataFrame.
 
-    by= gives a group label per x value, one curve, box or violin per group:
-    kx.plot(df.value, spec='kde', by=df.group).
+    Up to three arrays x, y, z, then the spec (or spec=). by= gives a group label per x value,
+    one curve, box or violin per group: kx.plot(df, 'value', spec='kde', by='group').
+    Other keywords go to the kind's matplotlib call and win over kx's defaults:
+    kx.plot(x, y, 'line', linewidth=3), kx.plot(x, spec='hist', bins=50). kx.grammar(kind) says which call.
 
     A theme in the spec applies to this plot only; kx.use() sets the notebook default.
     """
-    if isinstance(z, str):                      # kx.plot(x, y, "spec"): spec given as 3rd arg
-        if spec is not None:
-            raise TypeError("spec given twice (as z and as spec=)")
-        z, spec = None, z
+    x, y, z, spec, by = _arrays(data, spec, by)
     name, theme, flags = parse(spec or "line")
     kind = KINDS[name]
     if kind.needs_y and y is None:
@@ -44,11 +45,49 @@ def plot(x: ArrayLike, y: ArrayLike | None = None, z: ArrayLike | str | None = N
     style = plt.style.context(["default", style_path(theme)]) if theme else contextlib.nullcontext()
     with style:
         ax = ax or plt.subplots()[1]
-        kind.draw(ax, x, y, z, flags, **({"by": by} if by is not None else {}))
+        kind.draw(ax, x, y, z, flags, **({"by": by} if by is not None else {}), **kwargs)
         _common(ax, name, kind.value_axis, flags)
         if title:            ax.set_title(title)
         if "tight" in flags: ax.figure.tight_layout()
     return ax
+
+
+def _arrays(data: tuple, spec: str | None, by: ArrayLike | str | None) -> tuple:
+    """(x, y, z, spec, by) from kx.plot's positional arguments: arrays, or a DataFrame and column names."""
+    data = list(data)
+    df = data.pop(0) if data and isinstance(data[0], pd.DataFrame) else None
+    if data and isinstance(data[-1], str) and (df is None or data[-1] not in df.columns):
+        if spec is not None:                    # a trailing string that is not a column is the spec
+            raise TypeError(f"spec given twice ({data[-1]!r} and spec={spec!r})")
+        if df is not None:                      # not a spec either, but close to a column: a mistyped column
+            try:
+                parse(data[-1])
+            except ValueError:
+                if difflib.get_close_matches(data[-1], [str(c) for c in df.columns]):
+                    _column(df, data[-1])
+                raise
+        spec = data.pop()
+    if df is not None:
+        if not data:
+            raise TypeError("kx.plot(df, ...) needs the column names to plot: kx.plot(df, 'x', 'y')")
+        data = [_column(df, c) for c in data]
+        by = _column(df, by) if isinstance(by, str) else by
+    elif isinstance(by, str):
+        raise TypeError(f"by={by!r} names a column, which needs a DataFrame first: kx.plot(df, 'x', by={by!r})")
+    if not 1 <= len(data) <= 3:
+        raise TypeError(f"kx.plot takes x, y and z: up to 3 arrays, got {len(data)}")
+    return *data, *[None] * (3 - len(data)), spec, by
+
+
+def _column(df: pd.DataFrame, name: object) -> pd.Series:
+    """df[name], or an error naming the columns that are close."""
+    if not isinstance(name, str):
+        raise TypeError(f"after a DataFrame, give column names, not {type(name).__name__}")
+    if name not in df.columns:
+        close = difflib.get_close_matches(name, [str(c) for c in df.columns], n=3)
+        hint = f" Did you mean {close}?" if close else f" Columns: {list(df.columns)}"
+        raise ValueError(f"no column {name!r} in the DataFrame.{hint}")
+    return df[name]
 
 
 def _common(ax: Axes, name: str, value_axis: str, flags: set[str]) -> None:

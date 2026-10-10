@@ -32,7 +32,9 @@ import kx; kx.use('dark')
 kx.use('light', palette='okabe', cmap='cividis')   # notebook default: theme, palette, colormap
 kx.plot(x, y, z, 'scatter-grid-leg')               # spec: kind-theme-flag-...
 kx.plot(x, y, 'bar-paper')                         # a theme in the spec applies to this plot only
-kx.plot(df.value, spec='kde', by=df.group)         # one density curve per group
+kx.plot(df, 'month', 'y2025', 'bar')               # DataFrame columns by name
+kx.plot(x, y, 'line', linewidth=3)                 # other keywords go to matplotlib
+kx.plot(df, 'value', spec='kde', by='group')       # one density curve per group
 kx.plot(df.value, spec='box', by=df.group)         # one box per group (also ecdf, violin)
 ```
 

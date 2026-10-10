@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Added
 
+- `kx.plot(df, 'x', 'y', 'z', spec)` names DataFrame columns, and `by=` can name a column. A mistyped column
+  gets the closest names as a hint.
+- `kx.plot(..., **kwargs)` passes other keywords to the matplotlib call that draws the kind, over kx's defaults:
+  `kx.plot(x, y, 'line', linewidth=3)`. `bins=` sets the shared `hist` bins and `width=` (`height=` for
+  `barh`) the space each category's bars fill.
 - **Flags for every kind**
   - Layout: `legout` puts the legend outside on the right, keeping a kind's legend title. `rot` rotates the x tick
     labels 45°.

@@ -415,6 +415,83 @@ def test_spec_given_twice() -> None:
         kx.plot(X, Y, "line", spec="bar")
 
 
+DF = pd.DataFrame({"t": X, "speed": Y, "accel": Z, "group": np.where(X > 5, "late", "early")})
+
+
+def test_dataframe_columns_by_name() -> None:
+    ax = kx.plot(DF, "t", "speed", "accel", "line-leg")
+    assert [t.get_text() for t in ax.get_legend().get_texts()] == ["speed", "accel"]
+    assert list(ax.lines[0].get_ydata()) == list(Y)
+
+
+def test_dataframe_spec_as_keyword_and_by_column() -> None:
+    assert len(kx.plot(DF, "t", "speed", spec="bar").patches) == len(X)
+    ax = kx.plot(DF, "speed", spec="box", by="group")
+    assert [t.get_text() for t in ax.get_xticklabels()] == ["early", "late"]
+    assert ax.get_xlabel() == "group"
+
+
+def test_dataframe_column_named_like_a_kind_is_a_column() -> None:
+    df = pd.DataFrame({"x": X, "bar": Y})
+    ax = kx.plot(df, "x", "bar")
+    assert len(ax.lines) == 1
+    assert list(ax.lines[0].get_ydata()) == list(Y)
+
+
+@pytest.mark.parametrize(("call", "error", "match"), [
+    (lambda: kx.plot(DF, "t", "sped"), ValueError, r"no column 'sped'.*Did you mean \['speed'\]"),
+    (lambda: kx.plot(DF, "t", "speed", "linee"), ValueError, "unknown tokens"),
+    (lambda: kx.plot(DF, spec="line"), TypeError, "needs the column names"),
+    (lambda: kx.plot(DF, "t", DF.speed), TypeError, "give column names"),
+    (lambda: kx.plot(X, spec="kde", by="group"), TypeError, "needs a DataFrame"),
+    (lambda: kx.plot(X, Y, Z, Z), TypeError, "up to 3 arrays, got 4"),
+    (lambda: kx.plot(), TypeError, "got 0"),
+])
+def test_call_shape_errors(call: Callable[[], Axes], error: type, match: str) -> None:
+    with pytest.raises(error, match=match):
+        call()
+
+
+def test_kwargs_reach_matplotlib_and_win_over_defaults() -> None:
+    ln = kx.plot(X, Y, Z, "line-mk", linewidth=4, marker="s").lines
+    assert {(x.get_linewidth(), x.get_marker()) for x in ln} == {(4, "s")}
+    assert [t.get_text() for t in kx.plot(X, Y, "line-leg", label="mine").get_legend().get_texts()] == ["mine"]
+    sc = kx.plot(X, Y, Z, "scatter", cmap="magma", s=50).collections[0]
+    assert (sc.get_cmap().name, list(sc.get_sizes())) == ("magma", [50])
+
+
+@pytest.mark.parametrize(("spec", "kw", "check"), [
+    ("step", {"linestyle": "--"}, lambda ax: ax.lines[0].get_linestyle() == "--"),
+    ("area", {"alpha": 0.5}, lambda ax: ax.collections[0].get_alpha() == 0.5),
+    ("area-stack", {"alpha": 0.5}, lambda ax: ax.collections[0].get_alpha() == 0.5),
+    ("band", {"color": "red"}, lambda ax: to_hex(ax.collections[0].get_facecolor()[0]) == "#ff0000"),
+    ("kde", {"linestyle": ":"}, lambda ax: ax.lines[0].get_linestyle() == ":"),
+    ("ecdf", {"color": "red"}, lambda ax: to_hex(ax.lines[0].get_color()) == "#ff0000"),
+    ("box", {"showfliers": False}, lambda ax: len(ax.lines) == 5),             # whiskers, caps, median; no fliers
+    ("violin", {"widths": 0.2}, lambda ax: np.ptp(ax.collections[0].get_paths()[0].vertices[:, 0]) <= 0.2 + 1e-9),
+])
+def test_kwargs_for_each_kind(spec: str, kw: dict, check: Callable[[Axes], bool]) -> None:
+    assert check(kx.plot(X, Y, np.abs(Z), spec, **kw) if spec in ("step", "area", "area-stack", "band")
+                 else kx.plot(np.r_[X, 100], spec=spec, **kw))
+
+
+@pytest.mark.parametrize(("spec", "key", "size"), [("bar", "width", "get_width"), ("barh", "height", "get_height")])
+def test_bar_width_is_the_space_per_category(spec: str, key: str, size: str) -> None:
+    ax = kx.plot(["a", "b"], [1, 2], [2, 1], spec, **{key: 0.5})
+    assert {getattr(p, size)() for p in ax.patches} == {0.25}
+
+
+def test_hist_bins_keyword_replaces_shared_bins() -> None:
+    assert len(kx.plot(X, spec="hist", bins=5).patches) == 5
+    ax = kx.plot(X, Y, spec="hist", bins=np.linspace(0, 10, 11))
+    assert [len(c) for c in ax.containers] == [10, 10]
+
+
+def test_unknown_kwarg_is_matplotlibs_error() -> None:
+    with pytest.raises(AttributeError, match="nonsense"):
+        kx.plot(X, Y, "line", nonsense=1)
+
+
 def test_non_hist_needs_y() -> None:
     with pytest.raises(ValueError, match="needs both x and y"):
         kx.plot(X, spec="line")
