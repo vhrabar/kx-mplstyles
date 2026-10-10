@@ -619,8 +619,16 @@ def test_kind_names_stay_unique_tokens(name: str) -> None:
 
 # ---------- data ----------
 def test_datasets_and_load() -> None:
-    assert {"waves", "cloud", "monthly", "dists"} <= set(kx.datasets())
+    assert {"waves", "cloud", "monthly", "dists", "daily"} <= set(kx.datasets())
     assert list(kx.load("waves").columns) == ["x", "y", "z"]
+
+
+def test_daily_is_two_full_years_of_days() -> None:
+    daily = kx.load("daily")
+    assert list(daily.columns) == ["date", "temp", "sales"]
+    days = pd.to_datetime(daily.date)
+    assert days.diff().iloc[1:].eq(pd.Timedelta("1D")).all()
+    assert (days.iloc[0], days.iloc[-1]) == (pd.Timestamp("2025-01-01"), pd.Timestamp("2026-12-31"))
 
 
 def test_load_unknown() -> None:
